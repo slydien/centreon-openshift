@@ -1,7 +1,6 @@
 # Centreon OpenShift Overlay
 
-[![web-image v24.10](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml/badge.svg?branch=main&label=web-image%20v24.10)](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml)
-[![web-image v25.10](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml/badge.svg?branch=main&label=web-image%20v25.10)](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml)
+[![web-image](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml/badge.svg?branch=main&label=web-image)](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml)
 
 This repo holds OpenShift overlay Dockerfiles and helper assets for Centreon.
 
