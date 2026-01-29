@@ -1,0 +1,61 @@
+diff --git a/usr/share/centreon/www/class/centreon-clapi/centreon.Config.Poller.class.php b/usr/share/centreon/www/class/centreon-clapi/centreon.Config.Poller.class.php
+index 1111111..2222222 100644
+--- a/usr/share/centreon/www/class/centreon-clapi/centreon.Config.Poller.class.php
++++ b/usr/share/centreon/www/class/centreon-clapi/centreon.Config.Poller.class.php
+@@ -1,3 +1,4 @@
+ <?php
++declare(strict_types=1);
+
+ /*
+  * Copyright 2005 - 2025 Centreon (https://www.centreon.com/)
+@@ -235,6 +236,21 @@ class CentreonConfigPoller
+     public function pollerGenerate($variables, $login, $password)
+     {
+ 
+         $config_generate = new Generate($this->dependencyInjector);
+@@ -244,10 +260,30 @@ class CentreonConfigPoller
+         $config_generate->configPollerFromId($poller_id, $login);
+ 
+         // Change files owner
+         $apacheUser = $this->getApacheUser();
+ 
++        /**
++         * OpenShift / Kubernetes: container runs with arbitrary UID and does not allow chown/chgrp.
++         * When CENTREON_DISABLE_OWNERSHIP_CHANGES is enabled, we rely on directory permissions (fsGroup / g+rwX).
++         */
++        $disableOwnershipChanges = false;
++        $envVal = getenv('CENTREON_DISABLE_OWNERSHIP_CHANGES');
++        if ($envVal !== false) {
++            $envVal = strtolower(trim((string) $envVal));
++            $disableOwnershipChanges = in_array($envVal, ['1', 'true', 'yes', 'on'], true);
++        }
++
+         $setFilesOwner = 1;
+-        if (posix_getuid() === 0 && $apacheUser != '') {
++        if ($disableOwnershipChanges) {
++            $setFilesOwner = 0;
++        } elseif (posix_getuid() === 0 && $apacheUser != '') {
+             // Change engine Path mod
+             chown($this->engineCachePath . "/{$poller_id}", $apacheUser);
+             chgrp($this->engineCachePath . "/{$poller_id}", $apacheUser);
+@@ -301,12 +337,18 @@ class CentreonConfigPoller
+             $setFilesOwner = 0;
+         }
+ 
+         if ($setFilesOwner == 0) {
+-            echo "Cannot set configuration file owner after the generation. \n";
+-            echo 'Please check that files in the followings directory are writable by apache user : '
+-                . $this->engineCachePath . "/{$poller_id}/\n";
+-            echo 'Please check that files in the followings directory are writable by apache user : '
+-                . $this->brokerCachePath . "/{$poller_id}/\n";
++            if (! $disableOwnershipChanges) {
++                echo "Cannot set configuration file owner after the generation. \n";
++                echo 'Please check that files in the followings directory are writable by apache user : '
++                    . $this->engineCachePath . "/{$poller_id}/\n";
++                echo 'Please check that files in the followings directory are writable by apache user : '
++                    . $this->brokerCachePath . "/{$poller_id}/\n";
++            }
+         }
+ 
+         echo "Configuration files generated for poller '" . $variables . "'\n";
+

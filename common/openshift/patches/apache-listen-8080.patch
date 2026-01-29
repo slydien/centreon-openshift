@@ -1,0 +1,15 @@
+diff --git a/etc/httpd/conf/httpd.conf b/etc/httpd/conf/httpd.conf
+--- a/etc/httpd/conf/httpd.conf
++++ b/etc/httpd/conf/httpd.conf
+@@ -44,7 +44,7 @@
+ # available when the service starts.  See the httpd.service(8) man
+ # page for more information.
+ #
+ #Listen 12.34.56.78:80
+-Listen 80
++Listen 8080
+ 
+ #
+ # Dynamic Shared Object (DSO) Support
+ #
+

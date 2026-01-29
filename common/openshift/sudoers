@@ -1,0 +1,3 @@
+Defaults:root !requiretty
+%root ALL=(apache,centreon,centreon-engine,centreon-broker,centreon-gorgone) NOPASSWD: ALL
+ALL ALL=(apache,centreon,centreon-engine,centreon-broker,centreon-gorgone) NOPASSWD: ALL

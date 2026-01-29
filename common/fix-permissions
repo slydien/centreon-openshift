@@ -1,0 +1,30 @@
+#!/bin/sh
+# Fix permissions on the given directory to allow OpenShift arbitrary UIDs to write.
+#
+# OpenShift commonly runs containers with a random UID and GID 0 (root group).
+# This script makes TARGET owned by group 0 and grants group read/write, and
+# sets the setgid bit on directories so new files inherit GID 0.
+
+set -eu
+
+TARGET="${1:-}"
+if [ -z "$TARGET" ]; then
+    echo "usage: fix-permissions <dir>" >&2
+    exit 1
+fi
+
+# Ensure the directory exists
+mkdir -p "$TARGET"
+
+# 1) Make everything belong to root group (ignore failures on some FS)
+chgrp -R 0 "$TARGET" 2>/dev/null || true
+
+# 2) Grant group read/write; add execute only where appropriate (dirs and already-exec files)
+#    - Directories: g+rwx + setgid (inherit group 0)
+#    - Files:       g+rw, and keep exec bit only if it already existed
+find "$TARGET" -xdev -type d -exec chmod g+rwx,g+s {} + 2>/dev/null || true
+find "$TARGET" -xdev -type f -exec chmod g+rw {} + 2>/dev/null || true
+find "$TARGET" -xdev -type f -perm -010 -exec chmod g+x {} + 2>/dev/null || true
+
+# 3) Be conservative: do NOT make things world-writable by default.
+# If you have a specific need for world-writable paths (rare), handle it explicitly elsewhere.

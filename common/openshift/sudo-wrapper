@@ -1,0 +1,31 @@
+#!/bin/sh
+set -e
+
+uid=$(id -u 2>/dev/null || true)
+if [ -n "$uid" ] && ! getent passwd "$uid" >/dev/null 2>&1; then
+  echo "default:x:${uid}:0:OpenShift UID:/tmp:/sbin/nologin" >> /etc/passwd || true
+  if command -v getent >/dev/null 2>&1; then
+    if ! getent shadow default >/dev/null 2>&1; then
+      days=$(( $(date +%s) / 86400 ))
+      echo "default:*:${days}:0:99999:7:::" >> /etc/shadow || true
+    fi
+  fi
+fi
+
+# OpenShift sets NoNewPrivs=1, which blocks setuid sudo. Run as current UID.
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -n) shift ;;
+    -u|-g) shift 2 ;;
+    -u*|-g*) shift ;;
+    --) shift; break ;;
+    -*) shift ;;
+    *) break ;;
+  esac
+done
+
+if [ $# -eq 0 ]; then
+  exit 0
+fi
+
+exec "$@"
