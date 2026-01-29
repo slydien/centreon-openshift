@@ -1,9 +1,13 @@
+# Global chart settings
+
 global:
+  # -- Global image pull policy for all images
   imagePullPolicy: Always
-  # Add imagePullSecrets if needed
+  # -- List of imagePullSecrets names to use for pulling images
   imagePullSecrets: []
-  # OpenShift-friendly defaults; do not set runAsUser to allow SCC to assign a UID.
+  # -- Pod-level security context (OpenShift assigns a UID, so keep this empty)
   podSecurityContext: {}
+  # -- Container security context applied to all pods
   securityContext:
     runAsNonRoot: true
     allowPrivilegeEscalation: false
@@ -13,91 +17,157 @@ global:
     seccompProfile:
       type: RuntimeDefault
 
+# RBAC settings
+
 rbac:
   endpointSlice:
+    # -- Create RBAC allowing the service account to read EndpointSlices
     enabled: true
+    # -- Service account name used for EndpointSlice RBAC
     serviceAccountName: default
+
+# OpenShift Routes
 
 routes:
   web:
+    # -- Create an OpenShift Route for the web service
     enabled: true
+    # -- Route host (leave empty to let OpenShift assign)
     host: ""
     tls:
+      # -- TLS termination type (edge, passthrough, reencrypt)
       termination: edge
+      # -- Insecure edge termination policy (None, Allow, Redirect)
       insecureEdgeTerminationPolicy: Redirect
+
+# Service deployments
 
 services:
   web:
+    # -- Deploy the web service
     enabled: true
+    # -- Number of replicas for the web Deployment
     replicas: 1
+    # -- Image for the web service
     image: slydien/centreon-web-alma9:24.10-openshift
     ports:
+      # -- Service port name for HTTP
       - name: http
+        # -- Service port
         port: 8080
+        # -- Container target port
         targetPort: 8080
     env:
+      # -- Disable ownership changes in the container
       CENTREON_DISABLE_OWNERSHIP_CHANGES: 1
+      # -- MySQL root password
       MYSQL_ROOT_PASSWORD: centreon
+      # -- MySQL user
       MYSQL_USER: centreon
+      # -- MySQL password
       MYSQL_PASSWORD: centreon
+      # -- Extra MySQL flags
       MYSQL_EXTRA_FLAGS: "--secure-file-priv="
+      # -- MariaDB root password
       MARIADB_ROOT_PASSWORD: centreon
+      # -- MariaDB user
       MARIADB_USER: centreon
+      # -- MariaDB password
       MARIADB_PASSWORD: centreon
+      # -- Extra MariaDB flags
       MARIADB_EXTRA_FLAGS: "--secure-file-priv="
+      # -- MySQL host name
       MYSQL_HOST: db
+      # -- LDAP host name
       LDAP_HOST: ""
+      # -- OpenID host name
       OPENID_HOST: ""
+      # -- SAML host name
       SAML_HOST: ""
+      # -- Vault host name
       VAULT_HOST: ""
+      # -- Vault role ID
       VAULT_ROLE_ID: ""
+      # -- Vault secret ID
       VAULT_SECRET_ID: ""
+      # -- Centreon dataset selection
       CENTREON_DATASET: "1"
+      # -- Centreon language
       CENTREON_LANG: en_US
     probes:
       startup:
+        # -- Startup probe HTTP path
         httpGet:
           path: /centreon/api/latest/platform/versions
           port: 8080
+        # -- Startup probe initial delay in seconds
         initialDelaySeconds: 15
+        # -- Startup probe period in seconds
         periodSeconds: 10
+        # -- Startup probe timeout in seconds
         timeoutSeconds: 3
+        # -- Startup probe failure threshold
         failureThreshold: 60
       readiness:
+        # -- Readiness probe HTTP path
         httpGet:
           path: /centreon/api/latest/platform/versions
           port: 8080
+        # -- Readiness probe initial delay in seconds
         initialDelaySeconds: 15
+        # -- Readiness probe period in seconds
         periodSeconds: 5
+        # -- Readiness probe timeout in seconds
         timeoutSeconds: 3
+        # -- Readiness probe failure threshold
         failureThreshold: 12
       liveness:
+        # -- Liveness probe HTTP path
         httpGet:
           path: /centreon/api/latest/platform/versions
           port: 8080
+        # -- Liveness probe initial delay in seconds
         initialDelaySeconds: 60
+        # -- Liveness probe period in seconds
         periodSeconds: 10
+        # -- Liveness probe timeout in seconds
         timeoutSeconds: 3
 
   db:
+    # -- Deploy the database service
     enabled: true
+    # -- Number of replicas for the database Deployment
     replicas: 1
+    # -- Image for the database service
     image: bitnamilegacy/mariadb:10.11
     ports:
+      # -- Service port name for MySQL
       - name: mysql
+        # -- Service port
         port: 3306
+        # -- Container target port
         targetPort: 3306
     env:
+      # -- MariaDB root password
       MARIADB_ROOT_PASSWORD: centreon
+      # -- MariaDB root host
       MARIADB_ROOT_HOST: "%"
+      # -- MariaDB database name
       MARIADB_DATABASE: centreon
+      # -- MariaDB user
       MARIADB_USER: centreon
+      # -- MariaDB password
       MARIADB_PASSWORD: centreon
+      # -- Extra MariaDB flags
       MARIADB_EXTRA_FLAGS: "--secure-file-priv="
 
   poller:
+    # -- Deploy the poller service
     enabled: false
+    # -- Number of replicas for the poller Deployment
     replicas: 1
+    # -- Image for the poller service
     image: docker.centreon.com/centreon/centreon-poller-alma9:develop
     env:
+      # -- Hostname of the web service for the poller
       WEB_HOST: web
