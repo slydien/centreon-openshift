@@ -47,26 +47,4 @@ docker build -f web/Dockerfile.alma9.openshift \
 ```
 
 ## Helm chart
-The OpenShift Helm chart lives in `helm/centreon-openshift`.
-
-Install (namespace `centreon`):
-```
-helm install centreon-openshift helm/centreon-openshift -n centreon
-```
-
-Upgrade:
-```
-helm upgrade --install centreon-openshift helm/centreon-openshift -n centreon
-```
-
-Uninstall:
-```
-helm uninstall centreon-openshift -n centreon
-```
-
-Customize values:
-```
-helm upgrade --install centreon-openshift helm/centreon-openshift \
-  -n centreon \
-  -f helm/centreon-openshift/values.yaml
-```
+See `helm/centreon-openshift/README.md` for chart usage and values documentation.
