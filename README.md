@@ -1,5 +1,7 @@
 # Centreon OpenShift Overlay
 
+[![Build web images](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml/badge.svg?branch=main)](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml)
+
 This repo holds OpenShift overlay Dockerfiles and helper assets for Centreon.
 
 It is structured to support multiple components (web now, poller later).
