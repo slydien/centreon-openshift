@@ -2,5 +2,8 @@ apiVersion: v2
 name: centreon-openshift
 description: Centreon stack for OpenShift based on the local docker compose images
 type: application
-version: 1.0.0
+version: 1.0.1
 appVersion: "develop"
+annotations:
+  org.opencontainers.image.source: https://github.com/slydien/centreon-openshift
+  org.opencontainers.image.description: Centreon OpenShift Helm chart
