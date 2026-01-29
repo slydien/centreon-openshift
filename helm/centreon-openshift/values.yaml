@@ -1,0 +1,103 @@
+global:
+  imagePullPolicy: Always
+  # Add imagePullSecrets if needed
+  imagePullSecrets: []
+  # OpenShift-friendly defaults; do not set runAsUser to allow SCC to assign a UID.
+  podSecurityContext: {}
+  securityContext:
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+
+rbac:
+  endpointSlice:
+    enabled: true
+    serviceAccountName: default
+
+routes:
+  web:
+    enabled: true
+    host: ""
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+
+services:
+  web:
+    enabled: true
+    replicas: 1
+    image: slydien/centreon-web-alma9:24.10-openshift
+    ports:
+      - name: http
+        port: 8080
+        targetPort: 8080
+    env:
+      CENTREON_DISABLE_OWNERSHIP_CHANGES: 1
+      MYSQL_ROOT_PASSWORD: centreon
+      MYSQL_USER: centreon
+      MYSQL_PASSWORD: centreon
+      MYSQL_EXTRA_FLAGS: "--secure-file-priv="
+      MARIADB_ROOT_PASSWORD: centreon
+      MARIADB_USER: centreon
+      MARIADB_PASSWORD: centreon
+      MARIADB_EXTRA_FLAGS: "--secure-file-priv="
+      MYSQL_HOST: db
+      LDAP_HOST: ""
+      OPENID_HOST: ""
+      SAML_HOST: ""
+      VAULT_HOST: ""
+      VAULT_ROLE_ID: ""
+      VAULT_SECRET_ID: ""
+      CENTREON_DATASET: "1"
+      CENTREON_LANG: en_US
+    probes:
+      startup:
+        httpGet:
+          path: /centreon/api/latest/platform/versions
+          port: 8080
+        initialDelaySeconds: 15
+        periodSeconds: 10
+        timeoutSeconds: 3
+        failureThreshold: 60
+      readiness:
+        httpGet:
+          path: /centreon/api/latest/platform/versions
+          port: 8080
+        initialDelaySeconds: 15
+        periodSeconds: 5
+        timeoutSeconds: 3
+        failureThreshold: 12
+      liveness:
+        httpGet:
+          path: /centreon/api/latest/platform/versions
+          port: 8080
+        initialDelaySeconds: 60
+        periodSeconds: 10
+        timeoutSeconds: 3
+
+  db:
+    enabled: true
+    replicas: 1
+    image: bitnamilegacy/mariadb:10.11
+    ports:
+      - name: mysql
+        port: 3306
+        targetPort: 3306
+    env:
+      MARIADB_ROOT_PASSWORD: centreon
+      MARIADB_ROOT_HOST: "%"
+      MARIADB_DATABASE: centreon
+      MARIADB_USER: centreon
+      MARIADB_PASSWORD: centreon
+      MARIADB_EXTRA_FLAGS: "--secure-file-priv="
+
+  poller:
+    enabled: false
+    replicas: 1
+    image: docker.centreon.com/centreon/centreon-poller-alma9:develop
+    env:
+      WEB_HOST: web

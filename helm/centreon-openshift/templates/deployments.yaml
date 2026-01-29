@@ -1,0 +1,92 @@
+{{- range $name, $svc := .Values.services }}
+{{- if $svc.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "centreon.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  replicas: {{ $svc.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "centreon.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ $name }}
+  template:
+    metadata:
+      labels:
+        {{- include "centreon.selectorLabels" $ | nindent 8 }}
+        app.kubernetes.io/component: {{ $name }}
+    spec:
+      {{- $podSec := $svc.podSecurityContext | default $.Values.global.podSecurityContext }}
+      {{- if $podSec }}
+      securityContext:
+        {{- toYaml $podSec | nindent 8 }}
+      {{- end }}
+      {{- if $.Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml $.Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ $name }}
+          image: {{ $svc.image | quote }}
+          imagePullPolicy: {{ $svc.imagePullPolicy | default $.Values.global.imagePullPolicy }}
+          {{- $ctrSec := $svc.securityContext | default $.Values.global.securityContext }}
+          {{- if $ctrSec }}
+          securityContext:
+            {{- toYaml $ctrSec | nindent 12 }}
+          {{- end }}
+          {{- if $svc.ports }}
+          ports:
+            {{- range $port := $svc.ports }}
+            - name: {{ $port.name }}
+              containerPort: {{ $port.targetPort }}
+            {{- end }}
+          {{- end }}
+          {{- if $svc.env }}
+          env:
+            {{- range $key, $val := $svc.env }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if $svc.envFrom }}
+          envFrom:
+            {{- toYaml $svc.envFrom | nindent 12 }}
+          {{- end }}
+          {{- if $svc.configMapMounts }}
+          volumeMounts:
+            {{- range $mount := $svc.configMapMounts }}
+            - name: {{ $mount.name }}
+              mountPath: {{ $mount.mountPath }}
+              {{- if $mount.subPath }}
+              subPath: {{ $mount.subPath }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          {{- if $svc.probes }}
+          {{- if $svc.probes.startup }}
+          startupProbe:
+            {{- toYaml $svc.probes.startup | nindent 12 }}
+          {{- end }}
+          {{- if $svc.probes.readiness }}
+          readinessProbe:
+            {{- toYaml $svc.probes.readiness | nindent 12 }}
+          {{- end }}
+          {{- if $svc.probes.liveness }}
+          livenessProbe:
+            {{- toYaml $svc.probes.liveness | nindent 12 }}
+          {{- end }}
+          {{- end }}
+      {{- if $svc.configMapMounts }}
+      volumes:
+        {{- range $mount := $svc.configMapMounts }}
+        - name: {{ $mount.name }}
+          configMap:
+            name: {{ $mount.configMapName }}
+        {{- end }}
+      {{- end }}
+---
+{{- end }}
+{{- end }}

@@ -1,0 +1,25 @@
+{{- $route := .Values.routes.web -}}
+{{- if and $route $route.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: web
+  labels:
+    {{- include "centreon.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  to:
+    kind: Service
+    name: web
+    weight: 100
+  port:
+    targetPort: http
+  {{- if $route.host }}
+  host: {{ $route.host }}
+  {{- end }}
+  {{- if $route.tls }}
+  tls:
+    {{- toYaml $route.tls | nindent 4 }}
+  {{- end }}
+  wildcardPolicy: None
+{{- end }}
