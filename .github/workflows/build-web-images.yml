@@ -1,4 +1,4 @@
-name: Build web images
+name: build-web-image
 
 on:
   push:
@@ -18,15 +18,11 @@ jobs:
           - name: alma9
             dockerfile: web/Dockerfile.alma9.openshift
             tag: ghcr.io/slydien/centreon-web-alma9:24.10-openshift
-          - name: alma8
-            dockerfile: web/Dockerfile.alma8.openshift
-            tag: ghcr.io/slydien/centreon-web-alma8:24.10-openshift
-          - name: bookworm
-            dockerfile: web/Dockerfile.bookworm.openshift
-            tag: ghcr.io/slydien/centreon-web-bookworm:24.10-openshift
-          - name: jammy
-            dockerfile: web/Dockerfile.jammy.openshift
-            tag: ghcr.io/slydien/centreon-web-jammy:24.10-openshift
+            from_image_version: "24.10"
+          - name: alma9
+            dockerfile: web/Dockerfile.alma9.openshift
+            tag: ghcr.io/slydien/centreon-web-alma9:25.10-openshift
+            from_image_version: "25.10"
 
     steps:
       - uses: actions/checkout@v4
@@ -52,5 +48,5 @@ jobs:
           tags: ${{ matrix.tag }}
           build-args: |
             REGISTRY_URL=docker.io/slydien
-            FROM_IMAGE_VERSION=24.10
+            FROM_IMAGE_VERSION=${{ matrix.from_image_version }}
             STABILITY=stable

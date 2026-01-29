@@ -1,6 +1,7 @@
 # Centreon OpenShift Overlay
 
-[![Build web images](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml/badge.svg?branch=main)](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml)
+[![web-image v24.10](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml/badge.svg?branch=main&label=web-image%20v24.10)](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml)
+[![web-image v25.10](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml/badge.svg?branch=main&label=web-image%20v25.10)](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml)
 
 This repo holds OpenShift overlay Dockerfiles and helper assets for Centreon.
 
@@ -18,10 +19,7 @@ It is structured to support multiple components (web now, poller later).
 │        ├─ apache-listen-8080.patch
 │        └─ poller-generate-disable-ownership.patch
 ├─ web/
-│  ├─ Dockerfile.alma8.openshift
 │  ├─ Dockerfile.alma9.openshift
-│  ├─ Dockerfile.bookworm.openshift
-│  ├─ Dockerfile.jammy.openshift
 │  └─ config/
 │     ├─ httpd/
 │     │  ├─ 10-centreon.conf
@@ -49,32 +47,27 @@ docker build -f web/Dockerfile.alma9.openshift \
   --platform=linux/amd64 .
 ```
 
-Web (Alma8):
+## Helm chart
+The OpenShift Helm chart lives in `helm/centreon-openshift`.
+
+Install (namespace `centreon`):
 ```
-docker build -f web/Dockerfile.alma8.openshift \
-  -t slydien/centreon-web-alma8:24.10-openshift \
-  --build-arg=REGISTRY_URL=docker.io/slydien \
-  --build-arg=FROM_IMAGE_VERSION=24.10 \
-  --build-arg=STABILITY=stable \
-  --platform=linux/amd64 .
+helm install centreon-openshift helm/centreon-openshift -n centreon
 ```
 
-Web (Bookworm):
+Upgrade:
 ```
-docker build -f web/Dockerfile.bookworm.openshift \
-  -t slydien/centreon-web-bookworm:24.10-openshift \
-  --build-arg=REGISTRY_URL=docker.io/slydien \
-  --build-arg=FROM_IMAGE_VERSION=24.10 \
-  --build-arg=STABILITY=stable \
-  --platform=linux/amd64 .
+helm upgrade --install centreon-openshift helm/centreon-openshift -n centreon
 ```
 
-Web (Jammy):
+Uninstall:
 ```
-docker build -f web/Dockerfile.jammy.openshift \
-  -t slydien/centreon-web-jammy:24.10-openshift \
-  --build-arg=REGISTRY_URL=docker.io/slydien \
-  --build-arg=FROM_IMAGE_VERSION=24.10 \
-  --build-arg=STABILITY=stable \
-  --platform=linux/amd64 .
+helm uninstall centreon-openshift -n centreon
+```
+
+Customize values:
+```
+helm upgrade --install centreon-openshift helm/centreon-openshift \
+  -n centreon \
+  -f helm/centreon-openshift/values.yaml
 ```
