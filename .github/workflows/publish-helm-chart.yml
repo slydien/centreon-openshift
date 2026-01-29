@@ -1,0 +1,33 @@
+name: publish-helm-chart
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "helm/centreon-openshift/**"
+      - ".github/workflows/publish-helm-chart.yml"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Package chart
+        run: helm package helm/centreon-openshift
+
+      - name: Push chart
+        run: |
+          CHART_TGZ="$(ls -1 centreon-openshift-*.tgz | head -n 1)"
+          helm push "$CHART_TGZ" oci://ghcr.io/slydien
