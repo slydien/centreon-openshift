@@ -3,7 +3,7 @@
 [![web-image](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml/badge.svg?branch=main&label=web-image)](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml)
 [![helm-chart](https://github.com/slydien/centreon-openshift/actions/workflows/publish-helm-chart.yml/badge.svg?branch=main&label=helm-chart)](https://github.com/slydien/centreon-openshift/actions/workflows/publish-helm-chart.yml)
 
-This repo holds OpenShift overlay Dockerfiles and helper assets for Centreon.
+This repo holds OpenShift overlay Dockerfiles and helper assets for Centreon, layering on top of the Docker images published in the Centreon repository. See Centreon’s Docker build documentation: https://github.com/centreon/centreon/blob/develop/.github/docker/README.md
 
 It is structured to support multiple components (web now, poller later).
 
