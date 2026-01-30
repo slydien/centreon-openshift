@@ -86,7 +86,7 @@ The following table lists the configurable parameters of the chart and their def
 | services.db.env.MARIADB_USER | string | "centreon" | MariaDB user |
 | services.db.env.MARIADB_PASSWORD | string | "centreon" | MariaDB password |
 | services.db.env.MARIADB_EXTRA_FLAGS | string | "--secure-file-priv=" | Extra MariaDB flags |
-| services.poller.enabled | bool | `false` | Deploy the poller service |
+| services.poller.enabled | bool | `true` | Deploy the poller service |
 | services.poller.replicas | int | `1` | Number of replicas for the poller Deployment |
-| services.poller.image | string | "docker.centreon.com/centreon/centreon-poller-alma9:develop" | Image for the poller service |
+| services.poller.image | string | "ghcr.io/slydien/centreon-poller-alma9:24.10-openshift" | Image for the poller service |
 | services.poller.env.WEB_HOST | string | "web" | Hostname of the web service for the poller |

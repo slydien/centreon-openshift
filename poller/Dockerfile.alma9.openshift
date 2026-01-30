@@ -1,0 +1,105 @@
+ARG REGISTRY_URL=docker.centreon.com/centreon
+ARG FROM_IMAGE_VERSION=develop
+
+FROM ${REGISTRY_URL}/centreon-poller-alma9:${FROM_IMAGE_VERSION}
+
+###############################################################################
+# OpenShift compatibility overlay (Alma 9)
+###############################################################################
+
+# OpenShift helpers
+COPY --chmod=755 ./common/fix-permissions /usr/local/bin/fix-permissions
+COPY --chmod=440 ./common/openshift/sudoers /etc/sudoers.d/centreon-openshift
+COPY --chmod=755 ./common/openshift/sudo-wrapper /usr/local/bin/sudo
+
+RUN bash -e <<'EOF'
+set -euo pipefail
+
+# Replace sudo with wrapper
+if [ -x /usr/bin/sudo ]; then
+  mv /usr/bin/sudo /usr/bin/sudo.real
+fi
+ln -sf /usr/local/bin/sudo /usr/bin/sudo
+
+# Uncomment include directory for specific Openshift sudoers file
+sed -i 's/^#includedir/includedir/' /etc/sudoers
+
+# -----------------------------------------------------------------------------
+# 1) Relocate mutable /etc trees
+# -----------------------------------------------------------------------------
+mkdir -p /var/lib/centreon/
+
+relocate_tree() {
+  src="$1"
+  name="$2"
+  dst="/var/lib/centreon/${name}"
+
+  mkdir -p "$dst"
+
+  if [ -e "$src" ] && [ ! -L "$src" ]; then
+    cp -a "$src"/. "$dst"/ 2>/dev/null || true
+    rm -rf "$src"
+  fi
+
+  mkdir -p "$(dirname "$src")"
+  ln -sfn "$dst" "$src"
+}
+
+relocate_tree /etc/centreon         etc/centreon
+relocate_tree /etc/centreon-broker  etc/centreon-broker
+relocate_tree /etc/centreon-gorgone etc/centreon-gorgone
+relocate_tree /etc/centreon-engine  etc/centreon-engine
+relocate_tree /var/lib/centreon-engine  var/lib/centreon-engine
+relocate_tree /var/lib/centreon-broker  var/lib/centreon-broker
+relocate_tree /var/lib/centreon-gorgone  var/lib/centreon-gorgone
+
+# -----------------------------------------------------------------------------
+# 2) Create + fix permissions for runtime/state paths
+# -----------------------------------------------------------------------------
+mkdir -p \
+  /etc/sysconfig \
+  /var/lib/centreon \
+  /var/cache/centreon/config/broker \
+  /var/cache/centreon/config/engine \
+  /var/cache/centreon/config/vmware \
+  /var/log/centreon-engine \
+  /var/log/centreon-gorgone \
+  /var/log/centreon-broker \
+  /var/log/centreon \
+  /run/centreon \
+  /tmp
+
+/usr/local/bin/fix-permissions /etc/sysconfig
+/usr/local/bin/fix-permissions /var/lib/centreon
+/usr/local/bin/fix-permissions /var/cache/centreon
+/usr/local/bin/fix-permissions /var/log/centreon-engine
+/usr/local/bin/fix-permissions /var/log/centreon-broker
+/usr/local/bin/fix-permissions /var/log/centreon-gorgone
+/usr/local/bin/fix-permissions /var/log/centreon
+/usr/local/bin/fix-permissions /run/centreon
+/usr/local/bin/fix-permissions /usr/share/centreon
+/usr/local/bin/fix-permissions /tmp
+
+# -----------------------------------------------------------------------------
+# 3) /etc/passwd: random UID -> name resolution
+# -----------------------------------------------------------------------------
+chgrp 0 /etc/passwd
+chmod g+rw /etc/passwd
+EOF
+
+# group-root membership logic since we rely on GID 0 access patterns.
+RUN bash -e <<'EOF'
+set -euo pipefail
+root_members="$(getent group root | cut -d: -f4 || true)"
+for user in centreon centreon-gorgone centreon-engine centreon-broker; do
+  if id "$user" >/dev/null 2>&1; then
+    usermod -a -G root "$user"
+    case ",${root_members}," in
+      *",${user},"*) ;;
+      *) root_members="${root_members:+${root_members},}${user}" ;;
+    esac
+  fi
+done
+sed -i "s/^root:[^:]*:0:.*/root:x:0:${root_members}/" /etc/group
+
+EOF

@@ -163,11 +163,11 @@ services:
 
   poller:
     # -- Deploy the poller service
-    enabled: false
+    enabled: true
     # -- Number of replicas for the poller Deployment
     replicas: 1
     # -- Image for the poller service
-    image: docker.centreon.com/centreon/centreon-poller-alma9:develop
+    image: ghcr.io/slydien/centreon-poller-alma9:24.10-openshift
     env:
       # -- Hostname of the web service for the poller
       WEB_HOST: web

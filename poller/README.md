@@ -1,3 +1,4 @@
-Poller OpenShift overlays will live here.
+Poller OpenShift overlays live here.
 
-Add Dockerfile.*.openshift files for poller images when the requirements are known.
+Use `poller/Dockerfile.alma9.openshift` to build an OpenShift-compatible poller image
+from an existing `centreon-poller-alma9` base image.
