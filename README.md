@@ -1,6 +1,7 @@
 # Centreon OpenShift Overlay
 
 [![web-image](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml/badge.svg?branch=main&label=web-image)](https://github.com/slydien/centreon-openshift/actions/workflows/build-web-images.yml)
+[![helm-chart](https://github.com/slydien/centreon-openshift/actions/workflows/publish-helm-chart.yml/badge.svg?branch=main&label=helm-chart)](https://github.com/slydien/centreon-openshift/actions/workflows/publish-helm-chart.yml)
 
 This repo holds OpenShift overlay Dockerfiles and helper assets for Centreon.
 
