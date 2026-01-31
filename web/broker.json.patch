@@ -1,0 +1,12 @@
+diff --git a/.github/docker/centreon-web/alma9/configuration/broker.json b/.github/docker/centreon-web/alma9/configuration/broker.json
+index f17249d12f..fb4d5ad76b 100644
+--- a/.github/docker/centreon-web/alma9/configuration/broker.json
++++ b/.github/docker/centreon-web/alma9/configuration/broker.json
+@@ -2,5 +2,6 @@
+   "centreonbroker_etc": "\/etc\/centreon-broker",
+   "centreonbroker_log": "\/var\/log\/centreon-broker",
+   "centreonbroker_varlib": "\/var\/lib\/centreon-broker",
+-  "centreonbroker_lib": "\/usr\/share\/centreon\/lib\/centreon-broker"
++  "centreonbroker_lib": "\/usr\/share\/centreon\/lib\/centreon-broker",
++  "centreonbroker_cbmod": "\/usr\/lib64\/nagios\/cbmod.so"
+ }

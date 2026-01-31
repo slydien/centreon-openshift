@@ -1,0 +1,33 @@
+diff --git a/.github/docker/centreon-web/init/systemctl b/.github/docker/centreon-web/init/systemctl
+index fa2d80ce14..f9048e25a1 100644
+--- a/.github/docker/centreon-web/init/systemctl
++++ b/.github/docker/centreon-web/init/systemctl
+@@ -192,10 +192,10 @@ CAT_CMD = "/usr/bin/cat"
+ 
+ # The systemd default was NOTIFY_SOCKET="/var/run/systemd/notify"
+ _notify_socket_folder = "{RUN}/systemd" # alias /run/systemd
+-_journal_log_folder = "{LOG}/journal"
++_journal_log_folder = "/tmp"
+ 
+-SYSTEMCTL_DEBUG_LOG = "{LOG}/systemctl.debug.log"
+-SYSTEMCTL_EXTRA_LOG = "{LOG}/systemctl.log"
++SYSTEMCTL_DEBUG_LOG = "/tmp/systemctl.debug.log"
++SYSTEMCTL_EXTRA_LOG = "/tmp/systemctl.log"
+ 
+ _default_targets = ["poweroff.target", "rescue.target", "sysinit.target", "basic.target", "multi-user.target", "graphical.target", "reboot.target"]
+ _feature_targets = ["network.target", "remote-fs.target", "local-fs.target", "timers.target", "nfs-client.target"]
+@@ -500,6 +500,14 @@ def shutil_fchown(fileno, user, group):
+         os.fchown(fileno, uid, gid)
+ def shutil_setuid(user = None, group = None, xgroups = None):
+     """ set fork-child uid/gid (returns pw-info env-settings)"""
++    if os.geteuid() != 0:
++        if user:
++            try:
++                pw = pwd.getpwnam(user)
++                return {"USER": user, "LOGNAME": pw.pw_name, "HOME": pw.pw_dir, "SHELL": pw.pw_shell}
++            except KeyError:
++                return {}
++        return {}
+     if group:
+         gid = grp.getgrnam(group).gr_gid
+         os.setgid(gid)

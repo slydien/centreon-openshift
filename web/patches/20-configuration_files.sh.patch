@@ -1,0 +1,18 @@
+diff --git a/.github/docker/centreon-web/alma9/entrypoint/container.d/20-configuration_files.sh b/.github/docker/centreon-web/alma9/entrypoint/container.d/20-configuration_files.sh
+index f7bf23b9a5..4f2b7d0982 100644
+--- a/.github/docker/centreon-web/alma9/entrypoint/container.d/20-configuration_files.sh
++++ b/.github/docker/centreon-web/alma9/entrypoint/container.d/20-configuration_files.sh
+@@ -1,4 +1,11 @@
+ #!/bin/sh
+ 
+-su apache -s /bin/bash  -c "centreon -u admin -p Centreon\!2021 -a POLLERGENERATE -v 1"
+-su apache -s /bin/bash  -c "centreon -u admin -p Centreon\!2021 -a CFGMOVE -v 1"
++CENTREON_CMD="/usr/share/centreon/bin/centreon -u admin -p Centreon\\!2021"
++
++if ! test -r /etc/centreon/centreon.conf.php; then
++    php /usr/share/centreon/www/install/steps/process/configFileSetup.php || true
++    test -r /etc/centreon/centreon.conf.php || true
++fi
++
++/bin/bash -c "$CENTREON_CMD -a POLLERGENERATE -v 1"
++/bin/bash -c "$CENTREON_CMD -a CFGMOVE -v 1"

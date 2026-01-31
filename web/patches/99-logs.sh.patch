@@ -1,0 +1,13 @@
+diff --git a/.github/docker/centreon-web/alma9/entrypoint/container.d/99-logs.sh b/.github/docker/centreon-web/alma9/entrypoint/container.d/99-logs.sh
+index 311edf67c8..cdef0bc616 100644
+--- a/.github/docker/centreon-web/alma9/entrypoint/container.d/99-logs.sh
++++ b/.github/docker/centreon-web/alma9/entrypoint/container.d/99-logs.sh
+@@ -3,7 +3,4 @@
+ touch /tmp/docker.ready
+ echo "Centreon is ready"
+ 
+-tail -f \
+-  /var/log/httpd/error_log \
+-  /var/log/php-fpm/centreon-error.log \
+-  /var/log/php-fpm/error.log
++tail -f /var/log/{httpd,php-fpm,centreon*}/*.log
