@@ -123,7 +123,7 @@ jobs:
 
       - name: Load and push images to MicroShift registry
         run: |
-          # Determine image sources
+          # Determine image sources (both on GHCR)
           WEB_IMAGE="ghcr.io/slydien/centreon-web-alma9:24.10-openshift"
           POLLER_IMAGE="ghcr.io/slydien/centreon-poller-alma9:24.10-openshift"
 
