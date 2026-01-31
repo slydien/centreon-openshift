@@ -1,0 +1,197 @@
+name: Test Helm Chart Deployment
+
+on:
+  pull_request:
+    paths:
+      - 'helm/**'
+      - 'web/Dockerfile*'
+      - 'poller/Dockerfile*'
+      - 'common/**'
+      - '.github/workflows/test-helm-deployment.yml'
+  workflow_dispatch:
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      web_changed: ${{ steps.changes.outputs.web }}
+      poller_changed: ${{ steps.changes.outputs.poller }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            web:
+              - 'web/**'
+              - 'common/**'
+            poller:
+              - 'poller/**'
+              - 'common/**'
+
+  build-web-image:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.web_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: web/Dockerfile.alma9.openshift
+          platforms: linux/amd64
+          build-args: |
+            REGISTRY_URL=docker.io/slydien
+            FROM_IMAGE_VERSION=24.10
+            STABILITY=stable
+          tags: centreon-web-alma9:test
+          outputs: type=docker,dest=/tmp/web-image.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-image
+          path: /tmp/web-image.tar
+          retention-days: 1
+
+  build-poller-image:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.poller_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build poller image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: poller/Dockerfile.alma9.openshift
+          platforms: linux/amd64
+          build-args: |
+            REGISTRY_URL=ghcr.io/slydien
+            FROM_IMAGE_VERSION=24.10
+            STABILITY=stable
+          tags: centreon-poller-alma9:test
+          outputs: type=docker,dest=/tmp/poller-image.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: poller-image
+          path: /tmp/poller-image.tar
+          retention-days: 1
+
+  test-deployment:
+    needs: [detect-changes, build-web-image, build-poller-image]
+    # Always run, even if build jobs were skipped
+    if: always() && !cancelled() && !contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Setup CRC (MicroShift)
+        uses: crc-org/crc-github-action@v1
+        with:
+          preset: microshift
+
+      - name: Download web image artifact
+        if: needs.detect-changes.outputs.web_changed == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: web-image
+          path: /tmp
+
+      - name: Download poller image artifact
+        if: needs.detect-changes.outputs.poller_changed == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: poller-image
+          path: /tmp
+
+      - name: Load and push images to MicroShift registry
+        run: |
+          # Determine image sources
+          WEB_IMAGE="ghcr.io/slydien/centreon-web-alma9:24.10-openshift"
+          POLLER_IMAGE="ghcr.io/slydien/centreon-poller-alma9:24.10-openshift"
+
+          # Load locally built images if available
+          if [ -f /tmp/web-image.tar ]; then
+            echo "Loading locally built web image..."
+            podman load -i /tmp/web-image.tar
+            WEB_IMAGE="localhost/centreon-web-alma9:test"
+          fi
+
+          if [ -f /tmp/poller-image.tar ]; then
+            echo "Loading locally built poller image..."
+            podman load -i /tmp/poller-image.tar
+            POLLER_IMAGE="localhost/centreon-poller-alma9:test"
+          fi
+
+          # Export for later steps
+          echo "WEB_IMAGE=$WEB_IMAGE" >> $GITHUB_ENV
+          echo "POLLER_IMAGE=$POLLER_IMAGE" >> $GITHUB_ENV
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Create namespace
+        run: kubectl create namespace centreon
+
+      - name: Install Helm chart
+        run: |
+          helm install centreon ./helm/centreon-openshift \
+            --namespace centreon \
+            --set services.web.image.repository=${WEB_IMAGE%:*} \
+            --set services.web.image.tag=${WEB_IMAGE#*:} \
+            --set services.poller.image.repository=${POLLER_IMAGE%:*} \
+            --set services.poller.image.tag=${POLLER_IMAGE#*:} \
+            --timeout 15m
+
+      - name: Wait for pods to be ready
+        run: |
+          echo "Waiting for all pods to be ready..."
+          kubectl wait --for=condition=ready pod \
+            -l app.kubernetes.io/instance=centreon \
+            -n centreon \
+            --timeout=600s
+
+          echo "All pods are ready!"
+          kubectl get pods -n centreon
+
+      - name: Verify services
+        run: |
+          echo "=== Pod Status ==="
+          kubectl get pods -n centreon -o wide
+
+          echo "=== Services ==="
+          kubectl get svc -n centreon
+
+          echo "=== Routes ==="
+          kubectl get routes -n centreon 2>/dev/null || echo "Routes not available in MicroShift"
+
+      - name: Debug info on failure
+        if: failure()
+        run: |
+          echo "=== All Resources ==="
+          kubectl get all -n centreon
+
+          echo "=== Pod Descriptions ==="
+          kubectl describe pods -n centreon
+
+          echo "=== Pod Logs ==="
+          for pod in $(kubectl get pods -n centreon -o jsonpath='{.items[*].metadata.name}'); do
+            echo "--- Logs for $pod ---"
+            kubectl logs $pod -n centreon --all-containers --tail=100 || true
+          done
+
+          echo "=== Events ==="
+          kubectl get events -n centreon --sort-by='.lastTimestamp'
