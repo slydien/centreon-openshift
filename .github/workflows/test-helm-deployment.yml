@@ -150,10 +150,8 @@ jobs:
         run: |
           helm install centreon ./helm/centreon-openshift \
             --namespace centreon \
-            --set services.web.image.repository=${WEB_IMAGE%:*} \
-            --set services.web.image.tag=${WEB_IMAGE#*:} \
-            --set services.poller.image.repository=${POLLER_IMAGE%:*} \
-            --set services.poller.image.tag=${POLLER_IMAGE#*:} \
+            --set services.web.image="${WEB_IMAGE}" \
+            --set services.poller.image="${POLLER_IMAGE}" \
             --timeout 15m
 
       - name: Wait for pods to be ready
