@@ -1,0 +1,13 @@
+diff --git a/usr/share/centreon/www/class/config-generate/AdditionalConnectorVmWareV6.class.php b/usr/share/centreon/www/class/config-generate/AdditionalConnectorVmWareV6.class.php
+index 5e8b8a7..3b1c4b1 100644
+--- a/usr/share/centreon/www/class/config-generate/AdditionalConnectorVmWareV6.class.php
++++ b/usr/share/centreon/www/class/config-generate/AdditionalConnectorVmWareV6.class.php
+@@ -124,7 +124,7 @@ class AdditionalConnectorVmWareV6
+              * RW for centreon group are necessary for Gorgone Daemon.
+              */
+             chmod($fullFile, 0660);
+-            chgrp($fullFile, self::CENTREON_SYSTEM_USER);
++            @chgrp($fullFile, self::CENTREON_SYSTEM_USER);
+         } else {
+             throw new \Exception("Cannot open file " . $fullFile);
+         }

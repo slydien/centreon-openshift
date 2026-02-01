@@ -1,17 +1,32 @@
 diff --git a/.github/docker/centreon-poller/alma9/entrypoint/container.d/60-register_central.sh b/.github/docker/centreon-poller/alma9/entrypoint/container.d/60-register_central.sh
 --- a/.github/docker/centreon-poller/alma9/entrypoint/container.d/60-register_central.sh
 +++ b/.github/docker/centreon-poller/alma9/entrypoint/container.d/60-register_central.sh
-@@ -8,12 +8,29 @@
+@@ -8,15 +8,45 @@
  if getent hosts "${WEB_HOST}"; then
    # Set HOSTNAME if not already set
    : "${HOSTNAME:=$(hostname)}"
 +  if [ -n "${POD_IP:-}" ]; then
 +    HOSTNAME="${POD_IP}"
 +  fi
++  GORGONE_ID=2
++  if [ -n "${HOSTNAME:-}" ]; then
++    octet=$(echo "${HOSTNAME}" | awk -F. "{print $4}")
++    if [ -n "${octet}" ]; then
++      GORGONE_ID="${octet}"
++    fi
++  fi
  
 -  API_RESPONSE=$(curl -s -X POST --insecure -H "Content-Type: application/json" \
 -      -d "{\"security\":{\"credentials\":{\"login\":\"${WEB_API_USERNAME}\", \"password\":\"${WEB_API_PASSWORD}\"}}}" \
 -      "http://${WEB_HOST}/centreon/api/latest/login")
++  CENTRAL_IP_ADDRESS=$(getent hosts "${WEB_HOST}" | awk "{print $1;}") || {
++    echo "Failed to resolve ${WEB_HOST} hostname"
++    exit 1
++  }
+ 
+-  API_TOKEN=$(echo "${API_RESPONSE}" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+ 
+-  PAYLOAD='{"name":"'"$HOSTNAME"'","hostname":"'"$HOSTNAME"'","type":"'"poller"'","address":"'"$HOSTNAME"'","parent_address":"'"127.0.0.1"'"}'
 +  API_TOKEN=""
 +  MAX_LOGIN_RETRIES=30
 +  login_retry=0
@@ -20,8 +35,7 @@ diff --git a/.github/docker/centreon-poller/alma9/entrypoint/container.d/60-regi
 +        -d "{\"security\":{\"credentials\":{\"login\":\"${WEB_API_USERNAME}\", \"password\":\"${WEB_API_PASSWORD}\"}}}" \
 +        "http://${WEB_HOST}/centreon/api/latest/login")
  
--  API_TOKEN=$(echo "${API_RESPONSE}" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
-+    API_TOKEN=$(echo "${API_RESPONSE}" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
++    API_TOKEN=$(echo "${API_RESPONSE}" | grep -o "\"token\":\"[^\"]*" | cut -d"\"" -f4)
 +    if [ -n "${API_TOKEN}" ]; then
 +      break
 +    fi
@@ -32,10 +46,22 @@ diff --git a/.github/docker/centreon-poller/alma9/entrypoint/container.d/60-regi
 +    echo "Failed to retrieve API token after ${MAX_LOGIN_RETRIES} attempts"
 +    exit 1
 +  fi
- 
-   PAYLOAD='{"name":"'"$HOSTNAME"'","hostname":"'"$HOSTNAME"'","type":"'"poller"'","address":"'"$HOSTNAME"'","parent_address":"'"127.0.0.1"'"}'
- 
-@@ -63,17 +80,23 @@
++
++  PAYLOAD='{"name":"'$HOSTNAME'","hostname":"'$HOSTNAME'","type":"'poller'","address":"'$HOSTNAME'","parent_address":"'${CENTRAL_IP_ADDRESS}'"}'
++
+   curl -s -X POST --insecure -H "Content-Type: application/json" -H "X-AUTH-TOKEN: ${API_TOKEN}" \
+       -d "${PAYLOAD}" \
+       "http://${WEB_HOST}/centreon/api/latest/platform/topology"
+@@ -48,7 +78,7 @@
+ description: Configuration for poller $HOSTNAME
+ gorgone:
+   gorgonecore:
+-    id: 2
++    id: ${GORGONE_ID}
+     external_com_type: tcp
+     external_com_path: "*:5556"
+     authorized_clients:
+@@ -63,17 +93,27 @@
  
  EOF
  
@@ -49,13 +75,17 @@ diff --git a/.github/docker/centreon-poller/alma9/entrypoint/container.d/60-regi
 -    PING_OK=$(curl -s -X GET -H "accept: application/json" "http://${WEB_HOST}:${WEB_GORGONE_PORT}/api/internal/constatus" | grep -o '"ping_ok":[0-9]*' | cut -d':' -f2)
 -    if [ "$PING_OK" -gt "0" ] 2>/dev/null; then
 +    API_RESPONSE=$(curl -s -X GET -H "accept: application/json" "http://${WEB_HOST}:${WEB_GORGONE_PORT}/api/internal/constatus")
-+    if echo "${API_RESPONSE}" | grep -q '"ping_ok":[1-9]'; then
++    if echo "${API_RESPONSE}" | grep -q "\"ping_ok\":[1-9]"; then
 +      PING_OK=1
        for action in POLLERGENERATE CFGMOVE POLLERRESTART; do
          curl -X POST --insecure -H "Content-Type: application/json" -H "centreon-auth-token: ${API_TOKEN}" \
              -d "{\"action\":\"$action\",\"values\":\"$HOSTNAME\"}" \
              "http://${WEB_HOST}/centreon/api/index.php?action=action&object=centreon_clapi"
        done
++      # Ensure broker output points to central IP instead of localhost.
++      if [ -n "${CENTRAL_IP_ADDRESS:-}" ] && [ -f /etc/centreon-broker/central-module.json ]; then
++        sed -i "s/\"host\": \"localhost\"/\"host\": \"${CENTRAL_IP_ADDRESS}\"/g" /etc/centreon-broker/central-module.json
++      fi
 +    else
 +      PING_OK=0
      fi
