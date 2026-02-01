@@ -31,6 +31,8 @@ spec:
       {{- if and (eq $name "poller") $svc.initWait $svc.initWait.enabled }}
       {{- $defaultWebUrl := printf "http://web.%s.svc.cluster.local/centreon/api/latest/platform/versions" $.Release.Namespace }}
       {{- $webUrl := $svc.initWait.webUrl | default $defaultWebUrl }}
+      {{- $dbHost := $svc.initWait.dbHost | default "db" }}
+      {{- $dbPort := $svc.initWait.dbPort | default 3306 }}
       initContainers:
         - name: wait-deps
           image: alpine:3.19
@@ -48,8 +50,8 @@ spec:
                   echo "Timed out waiting for dependencies";
                   exit 1;
                 fi;
-                if wget -qO- {{ $webUrl | quote }} >/dev/null 2>&1; then
-                  echo "Web API ready";
+                if wget -qO- {{ $webUrl | quote }} >/dev/null 2>&1 && nc -z -w 3 {{ $dbHost | quote }} {{ $dbPort }} >/dev/null 2>&1; then
+                  echo "Web API and DB ready";
                   exit 0;
                 fi;
                 sleep 5;
