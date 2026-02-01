@@ -121,24 +121,26 @@ done
 sed -i "s/^root:[^:]*:0:.*/root:x:0:${root_members}/" /etc/group
 
 dnf install -y patch
-patch -p1 -d / -i /tmp/poller-generate-disable-ownership.patch \
- && rm -f /tmp/poller-generate-disable-ownership.patch
+
+# Apply patches with --forward to skip already-applied patches
+patch -N -p1 -d / -i /tmp/poller-generate-disable-ownership.patch || true
+rm -f /tmp/poller-generate-disable-ownership.patch
 
 # Apply common entrypoint patches
-patch -p6 -d /usr/share/centreon -i /tmp/00-init.sh.patch \
- && rm -f /tmp/00-init.sh.patch
-patch -p5 -d /bin -i /tmp/systemctl.patch \
- && rm -f /tmp/systemctl.patch
+patch -N -p6 -d /usr/share/centreon -i /tmp/00-init.sh.patch || true
+rm -f /tmp/00-init.sh.patch
+patch -N -p5 -d /bin -i /tmp/systemctl.patch || true
+rm -f /tmp/systemctl.patch
 
 # Apply web-specific patches with different strip levels
-patch -p1 -d / -i /tmp/web-patches/apache-listen-8080.patch \
- && rm -f /tmp/web-patches/apache-listen-8080.patch
-patch -p6 -d /usr/share/centreon/www/install/tmp -i /tmp/web-patches/broker.json.patch \
- && rm -f /tmp/web-patches/broker.json.patch
+patch -N -p1 -d / -i /tmp/web-patches/apache-listen-8080.patch || true
+rm -f /tmp/web-patches/apache-listen-8080.patch
+patch -N -p6 -d /usr/share/centreon/www/install/tmp -i /tmp/web-patches/broker.json.patch || true
+rm -f /tmp/web-patches/broker.json.patch
 
 # Apply web entrypoint patches (strip .github/docker/centreon-web/alma9/entrypoint/ prefix)
 for p in /tmp/web-patches/*.patch; do
-  patch -p6 -d /usr/share/centreon -i "$p"
+  patch -N -p6 -d /usr/share/centreon -i "$p" || true
 done
 rm -rf /tmp/web-patches
 
