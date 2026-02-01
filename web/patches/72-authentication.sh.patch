@@ -15,8 +15,8 @@ index 08f172fa37..59146f100a 100644
 -  sudo -u apache centreon -u admin -p Centreon\!2021 -o CONTACTTPL -a ADD -v "$CONTACT_TEMPLATE_NAME;$CONTACT_TEMPLATE_NAME;;1;1;en_US.UTF-8;local"
 -  CONTACT_TEMPLATE_ID=$(sudo -u apache centreon -u admin -p Centreon\!2021 -o CONTACTTPL -a SHOW -v "$CONTACT_TEMPLATE_NAME" | grep "$CONTACT_TEMPLATE_NAME" | cut -d';' -f1)
 +    CONTACT_TEMPLATE_NAME="openid_contact_template"
-+    sudo -u apache centreon -u admin -p Centreon\!2021 -o CONTACTTPL -a ADD -v "$CONTACT_TEMPLATE_NAME;$CONTACT_TEMPLATE_NAME;;1;1;en_US.UTF-8;local"
-+    CONTACT_TEMPLATE_ID=$(sudo -u apache centreon -u admin -p Centreon\!2021 -o CONTACTTPL -a SHOW -v "$CONTACT_TEMPLATE_NAME" | grep "$CONTACT_TEMPLATE_NAME" | cut -d';' -f1)
++    centreon -u admin -p Centreon\!2021 -o CONTACTTPL -a ADD -v "$CONTACT_TEMPLATE_NAME;$CONTACT_TEMPLATE_NAME;;1;1;en_US.UTF-8;local"
++    CONTACT_TEMPLATE_ID=$(centreon -u admin -p Centreon\!2021 -o CONTACTTPL -a SHOW -v "$CONTACT_TEMPLATE_NAME" | grep "$CONTACT_TEMPLATE_NAME" | cut -d';' -f1)
  
 -  RESPONSE=$(curl -s -w "%{http_code}" -H 'Content-Type:application/json' -H 'Accept:application/json' -d '{"security":{"credentials":{"login":"admin","password":"Centreon!2021"}}}' -L "http://localhost:80/centreon/api/latest/login")
 -  TOKEN=$(echo "$RESPONSE" | head -c -4 | jq -r '.security.token')

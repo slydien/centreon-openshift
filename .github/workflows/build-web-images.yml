@@ -47,6 +47,6 @@ jobs:
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           tags: ${{ matrix.tag }}
           build-args: |
-            REGISTRY_URL=docker.io/slydien
+            REGISTRY_URL=ghcr.io/slydien
             FROM_IMAGE_VERSION=${{ matrix.from_image_version }}
             STABILITY=stable
