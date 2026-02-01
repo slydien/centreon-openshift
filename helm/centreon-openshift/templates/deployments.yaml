@@ -74,6 +74,10 @@ spec:
           securityContext:
             {{- toYaml $ctrSec | nindent 12 }}
           {{- end }}
+          {{- if $svc.resources }}
+          resources:
+            {{- toYaml $svc.resources | nindent 12 }}
+          {{- end }}
           {{- if $svc.ports }}
           ports:
             {{- $seen := dict }}

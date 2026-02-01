@@ -136,6 +136,14 @@ services:
         periodSeconds: 10
         # -- Liveness probe timeout in seconds
         timeoutSeconds: 3
+    resources:
+      # -- Resource requests/limits for the web container
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        cpu: "1"
+        memory: 1000Mi
 
   db:
     # -- Deploy the database service
@@ -164,6 +172,14 @@ services:
       MARIADB_PASSWORD: centreon
       # -- Extra MariaDB flags
       MARIADB_EXTRA_FLAGS: "--secure-file-priv="
+    resources:
+      # -- Resource requests/limits for the database container
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        cpu: "1"
+        memory: 1000Mi
 
   poller:
     # -- Deploy the poller service
@@ -198,3 +214,11 @@ services:
       dbPort: 3306
       # -- Max wait time in seconds
       timeoutSeconds: 300
+    resources:
+      # -- Resource requests/limits for the poller container
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        cpu: "1"
+        memory: 1000Mi

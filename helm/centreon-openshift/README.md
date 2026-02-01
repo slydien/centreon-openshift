@@ -77,6 +77,10 @@ The following table lists the configurable parameters of the chart and their def
 | services.web.probes.liveness.initialDelaySeconds | int | `60` | Liveness probe initial delay in seconds |
 | services.web.probes.liveness.periodSeconds | int | `10` | Liveness probe period in seconds |
 | services.web.probes.liveness.timeoutSeconds | int | `3` | Liveness probe timeout in seconds |
+| services.web.resources.requests.cpu | string | `10m` |  |
+| services.web.resources.requests.memory | string | `64Mi` |  |
+| services.web.resources.limits.cpu | string | `"1"` |  |
+| services.web.resources.limits.memory | string | `1000Mi` |  |
 | services.db.enabled | bool | `true` | Deploy the database service |
 | services.db.replicas | int | `1` | Number of replicas for the database Deployment |
 | services.db.image | string | `bitnamilegacy/mariadb:10.11` | Image for the database service |
@@ -89,6 +93,10 @@ The following table lists the configurable parameters of the chart and their def
 | services.db.env.MARIADB_USER | string | `centreon` | MariaDB user |
 | services.db.env.MARIADB_PASSWORD | string | `centreon` | MariaDB password |
 | services.db.env.MARIADB_EXTRA_FLAGS | string | `"--secure-file-priv="` | Extra MariaDB flags |
+| services.db.resources.requests.cpu | string | `10m` |  |
+| services.db.resources.requests.memory | string | `64Mi` |  |
+| services.db.resources.limits.cpu | string | `"1"` |  |
+| services.db.resources.limits.memory | string | `1000Mi` |  |
 | services.poller.enabled | bool | `true` | Deploy the poller service |
 | services.poller.replicas | int | `1` | Number of replicas for the poller Deployment |
 | services.poller.image | string | `ghcr.io/slydien/centreon-poller-alma9:24.10-openshift` | Image for the poller service |
@@ -105,3 +113,7 @@ The following table lists the configurable parameters of the chart and their def
 | services.poller.initWait.dbHost | string | `"db"` | DB host to wait on |
 | services.poller.initWait.dbPort | int | `3306` | DB port to wait on |
 | services.poller.initWait.timeoutSeconds | int | `300` | Max wait time in seconds |
+| services.poller.resources.requests.cpu | string | `10m` |  |
+| services.poller.resources.requests.memory | string | `64Mi` |  |
+| services.poller.resources.limits.cpu | string | `"1"` |  |
+| services.poller.resources.limits.memory | string | `1000Mi` |  |
