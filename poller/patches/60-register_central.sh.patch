@@ -10,7 +10,7 @@ diff --git a/.github/docker/centreon-poller/alma9/entrypoint/container.d/60-regi
 +  fi
 +  GORGONE_ID=2
 +  if [ -n "${HOSTNAME:-}" ]; then
-+    octet=$(echo "${HOSTNAME}" | awk -F. "{print $4}")
++    octet=$(echo "${HOSTNAME}" | awk -F. '{print $4}')
 +    if [ -n "${octet}" ]; then
 +      GORGONE_ID="${octet}"
 +    fi
@@ -19,7 +19,7 @@ diff --git a/.github/docker/centreon-poller/alma9/entrypoint/container.d/60-regi
 -  API_RESPONSE=$(curl -s -X POST --insecure -H "Content-Type: application/json" \
 -      -d "{\"security\":{\"credentials\":{\"login\":\"${WEB_API_USERNAME}\", \"password\":\"${WEB_API_PASSWORD}\"}}}" \
 -      "http://${WEB_HOST}/centreon/api/latest/login")
-+  CENTRAL_IP_ADDRESS=$(getent hosts "${WEB_HOST}" | awk "{print $1;}") || {
++  CENTRAL_IP_ADDRESS=$(getent hosts "${WEB_HOST}" | awk '{print $1;}') || {
 +    echo "Failed to resolve ${WEB_HOST} hostname"
 +    exit 1
 +  }
