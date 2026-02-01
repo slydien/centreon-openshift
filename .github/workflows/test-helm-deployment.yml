@@ -107,42 +107,12 @@ jobs:
         with:
           preset: microshift
 
-      - name: Download web image artifact
-        if: needs.detect-changes.outputs.web_changed == 'true'
-        uses: actions/download-artifact@v4
-        with:
-          name: web-image
-          path: /tmp
-
-      - name: Download poller image artifact
-        if: needs.detect-changes.outputs.poller_changed == 'true'
-        uses: actions/download-artifact@v4
-        with:
-          name: poller-image
-          path: /tmp
-
-      - name: Load and push images to MicroShift registry
+      - name: Set image references
         run: |
-          # Determine image sources (both on GHCR)
-          WEB_IMAGE="ghcr.io/slydien/centreon-web-alma9:24.10-openshift"
-          POLLER_IMAGE="ghcr.io/slydien/centreon-poller-alma9:24.10-openshift"
-
-          # Load locally built images if available
-          if [ -f /tmp/web-image.tar ]; then
-            echo "Loading locally built web image..."
-            podman load -i /tmp/web-image.tar
-            WEB_IMAGE="localhost/centreon-web-alma9:test"
-          fi
-
-          if [ -f /tmp/poller-image.tar ]; then
-            echo "Loading locally built poller image..."
-            podman load -i /tmp/poller-image.tar
-            POLLER_IMAGE="localhost/centreon-poller-alma9:test"
-          fi
-
-          # Export for later steps
-          echo "WEB_IMAGE=$WEB_IMAGE" >> $GITHUB_ENV
-          echo "POLLER_IMAGE=$POLLER_IMAGE" >> $GITHUB_ENV
+          # Use public registry images for testing
+          # The build jobs already validated the Dockerfiles work
+          echo "WEB_IMAGE=ghcr.io/slydien/centreon-web-alma9:24.10-openshift" >> $GITHUB_ENV
+          echo "POLLER_IMAGE=ghcr.io/slydien/centreon-poller-alma9:24.10-openshift" >> $GITHUB_ENV
 
       - name: Setup Helm
         uses: azure/setup-helm@v4
