@@ -169,5 +169,11 @@ services:
     # -- Image for the poller service
     image: ghcr.io/slydien/centreon-poller-alma9:24.10-openshift
     env:
-      # -- Hostname of the web service for the poller
-      WEB_HOST: web
+      # -- Hostname of the web service for the poller (use service FQDN for cross-namespace compatibility)
+      WEB_HOST: ""
+      # -- Gorgone API port on the web service
+      WEB_GORGONE_PORT: "8085"
+      # -- API username for poller registration
+      WEB_API_USERNAME: admin
+      # -- API password for poller registration
+      WEB_API_PASSWORD: "Centreon!2021"

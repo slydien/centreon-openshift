@@ -12,6 +12,9 @@ COPY --chmod=755 ./common/fix-permissions /usr/local/bin/fix-permissions
 COPY --chmod=440 ./common/openshift/sudoers /etc/sudoers.d/centreon-openshift
 COPY --chmod=755 ./common/openshift/sudo-wrapper /usr/local/bin/sudo
 
+COPY --chmod=660 ./common/openshift/patches/00-init.sh.patch /tmp/00-init.sh.patch
+COPY --chmod=660 ./common/openshift/patches/systemctl.patch /tmp/systemctl.patch
+
 RUN bash -e <<'EOF'
 set -euo pipefail
 
@@ -102,4 +105,15 @@ for user in centreon centreon-gorgone centreon-engine centreon-broker; do
 done
 sed -i "s/^root:[^:]*:0:.*/root:x:0:${root_members}/" /etc/group
 
+dnf install -y patch
+
+# Apply 00-init.sh patch (strip a/.github/docker/centreon-web/alma9/entrypoint/ prefix)
+patch -p6 -d /usr/share/centreon -i /tmp/00-init.sh.patch \
+ && rm -f /tmp/00-init.sh.patch
+
+# Apply systemctl patch (strip a/.github/docker/centreon-web/init/ prefix)
+patch -p5 -d /bin -i /tmp/systemctl.patch \
+ && rm -f /tmp/systemctl.patch
+
+dnf clean all
 EOF

@@ -48,7 +48,11 @@ spec:
           env:
             {{- range $key, $val := $svc.env }}
             - name: {{ $key }}
+              {{- if and (eq $key "WEB_HOST") (eq $val "") }}
+              value: "web.{{ $.Release.Namespace }}.svc.cluster.local"
+              {{- else }}
               value: {{ $val | quote }}
+              {{- end }}
             {{- end }}
           {{- end }}
           {{- if $svc.envFrom }}

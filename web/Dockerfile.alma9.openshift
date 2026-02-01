@@ -13,10 +13,9 @@ COPY --chmod=440 ./common/openshift/sudoers /etc/sudoers.d/centreon-openshift
 COPY --chmod=755 ./common/openshift/sudo-wrapper /usr/local/bin/sudo
 
 COPY --chmod=660 ./common/openshift/patches/poller-generate-disable-ownership.patch /tmp/poller-generate-disable-ownership.patch
-COPY --chmod=660 ./common/openshift/patches/apache-listen-8080.patch /tmp/apache-listen-8080.patch
+COPY --chmod=660 ./common/openshift/patches/00-init.sh.patch /tmp/00-init.sh.patch
+COPY --chmod=660 ./common/openshift/patches/systemctl.patch /tmp/systemctl.patch
 COPY --chmod=660 ./web/patches/ /tmp/web-patches/
-COPY --chmod=660 ./web/systemctl.patch /tmp/systemctl.patch
-COPY --chmod=660 ./web/broker.json.patch /tmp/broker.json.patch
 
 RUN bash -e <<'EOF'
 set -euo pipefail
@@ -124,22 +123,24 @@ sed -i "s/^root:[^:]*:0:.*/root:x:0:${root_members}/" /etc/group
 dnf install -y patch
 patch -p1 -d / -i /tmp/poller-generate-disable-ownership.patch \
  && rm -f /tmp/poller-generate-disable-ownership.patch
-patch -p1 -d / -i /tmp/apache-listen-8080.patch \
- && rm -f /tmp/apache-listen-8080.patch
+
+# Apply common entrypoint patches
+patch -p6 -d /usr/share/centreon -i /tmp/00-init.sh.patch \
+ && rm -f /tmp/00-init.sh.patch
+patch -p5 -d /bin -i /tmp/systemctl.patch \
+ && rm -f /tmp/systemctl.patch
+
+# Apply web-specific patches with different strip levels
+patch -p1 -d / -i /tmp/web-patches/apache-listen-8080.patch \
+ && rm -f /tmp/web-patches/apache-listen-8080.patch
+patch -p6 -d /usr/share/centreon/www/install/tmp -i /tmp/web-patches/broker.json.patch \
+ && rm -f /tmp/web-patches/broker.json.patch
 
 # Apply web entrypoint patches (strip .github/docker/centreon-web/alma9/entrypoint/ prefix)
 for p in /tmp/web-patches/*.patch; do
   patch -p6 -d /usr/share/centreon -i "$p"
 done
 rm -rf /tmp/web-patches
-
-# Apply systemctl patch (strip a/.github/docker/centreon-web/init/ prefix)
-patch -p5 -d /bin -i /tmp/systemctl.patch \
- && rm -f /tmp/systemctl.patch
-
-# Apply broker.json patch (strip a/.github/docker/centreon-web/alma9/configuration/ prefix)
-patch -p6 -d /usr/share/centreon/www/install/tmp -i /tmp/broker.json.patch \
- && rm -f /tmp/broker.json.patch
 
 dnf clean all
 EOF
