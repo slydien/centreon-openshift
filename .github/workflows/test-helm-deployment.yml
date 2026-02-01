@@ -3,12 +3,12 @@ name: Test Helm Chart Deployment
 on:
   pull_request:
     paths:
-      - 'helm/**'
-      - 'web/Dockerfile*'
-      - 'poller/Dockerfile*'
-      - 'common/**'
-      - 'web/patches/**'
-      - '.github/workflows/test-helm-deployment.yml'
+      - "helm/**"
+      - "web/Dockerfile*"
+      - "poller/Dockerfile*"
+      - "common/**"
+      - "web/patches/**"
+      - ".github/workflows/test-helm-deployment.yml"
   workflow_dispatch:
 
 permissions:
@@ -64,7 +64,7 @@ jobs:
           file: web/Dockerfile.alma9.openshift
           platforms: linux/amd64
           build-args: |
-            REGISTRY_URL=docker.io/slydien
+            REGISTRY_URL=ghcr.io/slydien
             FROM_IMAGE_VERSION=24.10
             STABILITY=stable
           tags: ${{ steps.meta.outputs.tags }}
