@@ -28,6 +28,43 @@ spec:
       imagePullSecrets:
         {{- toYaml $.Values.global.imagePullSecrets | nindent 8 }}
       {{- end }}
+      {{- if and (eq $name "poller") $svc.initWait $svc.initWait.enabled }}
+      {{- $defaultWebUrl := printf "http://web.%s.svc.cluster.local/centreon/api/latest/platform/versions" $.Release.Namespace }}
+      {{- $webUrl := $svc.initWait.webUrl | default $defaultWebUrl }}
+      {{- $dbHost := $svc.initWait.dbHost | default "db" }}
+      {{- $dbPort := $svc.initWait.dbPort | default 3306 }}
+      initContainers:
+        - name: wait-deps
+          image: alpine:3.19
+          imagePullPolicy: {{ $svc.imagePullPolicy | default $.Values.global.imagePullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              set -e;
+              timeout={{ $svc.initWait.timeoutSeconds | default 300 }};
+              start=$(date +%s);
+              while true; do
+                now=$(date +%s);
+                if [ $((now - start)) -ge "$timeout" ]; then
+                  echo "Timed out waiting for dependencies";
+                  exit 1;
+                fi;
+                if wget -qO- {{ $webUrl | quote }} >/dev/null 2>&1 && nc -z -w 3 {{ $dbHost | quote }} {{ $dbPort }} >/dev/null 2>&1; then
+                  echo "Web API and DB ready";
+                  exit 0;
+                fi;
+                sleep 5;
+              done
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+      {{- end }}
       containers:
         - name: {{ $name }}
           image: {{ $svc.image | quote }}
@@ -39,13 +76,29 @@ spec:
           {{- end }}
           {{- if $svc.ports }}
           ports:
+            {{- $seen := dict }}
             {{- range $port := $svc.ports }}
+            {{- $key := printf "%v/%v" $port.targetPort (default "TCP" $port.protocol) }}
+            {{- if not (hasKey $seen $key) }}
             - name: {{ $port.name }}
               containerPort: {{ $port.targetPort }}
+              {{- if $port.protocol }}
+              protocol: {{ $port.protocol }}
+              {{- end }}
+            {{- $_ := set $seen $key true }}
+            {{- end }}
             {{- end }}
           {{- end }}
           {{- if $svc.env }}
           env:
+            {{- if eq $name "poller" }}
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: HOSTNAME
+              value: "$(POD_IP)"
+            {{- end }}
             {{- range $key, $val := $svc.env }}
             - name: {{ $key }}
               {{- if and (eq $key "WEB_HOST") (eq $val "") }}

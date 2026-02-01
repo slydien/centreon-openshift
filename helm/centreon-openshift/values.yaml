@@ -54,9 +54,13 @@ services:
       # -- Service port name for HTTP
       - name: http
         # -- Service port
-        port: 8080
+        port: 80
         # -- Container target port
         targetPort: 8080
+      # -- Service port name for gorgone
+      - name: gorgone
+        port: 8085
+        targetPort: 8085
     env:
       # -- Disable ownership changes in the container
       CENTREON_DISABLE_OWNERSHIP_CHANGES: 1
@@ -168,6 +172,12 @@ services:
     replicas: 1
     # -- Image for the poller service
     image: ghcr.io/slydien/centreon-poller-alma9:24.10-openshift
+    # -- Use per-pod IP for registration; service does not need to be headless
+    headless: false
+    ports:
+      - name: gorgone-core
+        port: 5556
+        targetPort: 5556
     env:
       # -- Hostname of the web service for the poller (use service FQDN for cross-namespace compatibility)
       WEB_HOST: ""
@@ -177,3 +187,14 @@ services:
       WEB_API_USERNAME: admin
       # -- API password for poller registration
       WEB_API_PASSWORD: "Centreon!2021"
+    initWait:
+      # -- Wait for web + db before starting poller
+      enabled: true
+      # -- Web health URL to wait on
+      webUrl: ""
+      # -- DB host to wait on
+      dbHost: "db"
+      # -- DB port to wait on
+      dbPort: 3306
+      # -- Max wait time in seconds
+      timeoutSeconds: 300
