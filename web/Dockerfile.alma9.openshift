@@ -12,9 +12,10 @@ COPY --chmod=755 ./common/fix-permissions /usr/local/bin/fix-permissions
 COPY --chmod=440 ./common/openshift/sudoers /etc/sudoers.d/centreon-openshift
 COPY --chmod=755 ./common/openshift/sudo-wrapper /usr/local/bin/sudo
 
-COPY --chmod=660 ./common/openshift/patches/poller-generate-disable-ownership.patch /tmp/poller-generate-disable-ownership.patch
 COPY --chmod=660 ./common/openshift/patches/00-init.sh.patch /tmp/00-init.sh.patch
 COPY --chmod=660 ./common/openshift/patches/systemctl.patch /tmp/systemctl.patch
+COPY --chmod=660 ./common/openshift/patches/ignore-vmware-chgrp.patch /tmp/ignore-vmware-chgrp.patch
+COPY --chmod=755 ./common/openshift/fix-poller-gen.py /usr/local/bin/fix-poller-gen.py
 COPY --chmod=660 ./web/patches/ /tmp/web-patches/
 
 RUN bash -e <<'EOF'
@@ -59,6 +60,12 @@ relocate_tree /var/lib/centreon-broker  var/lib/centreon-broker
 relocate_tree /var/lib/centreon-gorgone  var/lib/centreon-engine
 relocate_tree /usr/share/centreon/www/install/tmp install/tmp
 
+# Ensure gorgone keys are stable across restarts
+/usr/local/bin/gorgone_key_generation.pl
+chgrp 0 /var/lib/centreon-gorgone/.keys/rsakey.priv.pem /var/lib/centreon-gorgone/.keys/rsakey.pub.pem
+chmod 0640 /var/lib/centreon-gorgone/.keys/rsakey.priv.pem
+chmod 0644 /var/lib/centreon-gorgone/.keys/rsakey.pub.pem
+
 # -----------------------------------------------------------------------------
 # 2) Create + fix permissions for runtime/state paths
 # -----------------------------------------------------------------------------
@@ -98,6 +105,10 @@ mkdir -p \
 /usr/local/bin/fix-permissions /usr/share/centreon
 /usr/local/bin/fix-permissions /tmp
 
+# Allow non-nagios users to execute check_icmp (setuid root)
+chgrp 0 /usr/lib64/nagios/plugins/check_icmp
+chmod 4755 /usr/lib64/nagios/plugins/check_icmp
+
 # -----------------------------------------------------------------------------
 # 3) /etc/passwd: random UID -> name resolution
 # -----------------------------------------------------------------------------
@@ -123,8 +134,11 @@ sed -i "s/^root:[^:]*:0:.*/root:x:0:${root_members}/" /etc/group
 dnf install -y patch
 
 # Apply patches with --forward to skip already-applied patches
-patch -N -p1 -d / -i /tmp/poller-generate-disable-ownership.patch || true
-rm -f /tmp/poller-generate-disable-ownership.patch
+patch -N -p1 -d / -i /tmp/ignore-vmware-chgrp.patch || true
+rm -f /tmp/ignore-vmware-chgrp.patch
+
+# Disable ownership changes in CLAPI poller generation for OpenShift
+/usr/local/bin/fix-poller-gen.py
 
 # Apply common entrypoint patches
 patch -N -p6 -d /usr/share/centreon -i /tmp/00-init.sh.patch || true

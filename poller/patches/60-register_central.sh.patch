@@ -1,0 +1,63 @@
+diff --git a/.github/docker/centreon-poller/alma9/entrypoint/container.d/60-register_central.sh b/.github/docker/centreon-poller/alma9/entrypoint/container.d/60-register_central.sh
+--- a/.github/docker/centreon-poller/alma9/entrypoint/container.d/60-register_central.sh
++++ b/.github/docker/centreon-poller/alma9/entrypoint/container.d/60-register_central.sh
+@@ -8,12 +8,29 @@
+ if getent hosts "${WEB_HOST}"; then
+   # Set HOSTNAME if not already set
+   : "${HOSTNAME:=$(hostname)}"
++  if [ -n "${POD_IP:-}" ]; then
++    HOSTNAME="${POD_IP}"
++  fi
+ 
+-  API_RESPONSE=$(curl -s -X POST --insecure -H "Content-Type: application/json" \
+-      -d "{\"security\":{\"credentials\":{\"login\":\"${WEB_API_USERNAME}\", \"password\":\"${WEB_API_PASSWORD}\"}}}" \
+-      "http://${WEB_HOST}/centreon/api/latest/login")
++  API_TOKEN=""
++  MAX_LOGIN_RETRIES=30
++  login_retry=0
++  while [ -z "${API_TOKEN}" ] && [ $login_retry -lt $MAX_LOGIN_RETRIES ]; do
++    API_RESPONSE=$(curl -s -X POST --insecure -H "Content-Type: application/json" \
++        -d "{\"security\":{\"credentials\":{\"login\":\"${WEB_API_USERNAME}\", \"password\":\"${WEB_API_PASSWORD}\"}}}" \
++        "http://${WEB_HOST}/centreon/api/latest/login")
+ 
+-  API_TOKEN=$(echo "${API_RESPONSE}" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
++    API_TOKEN=$(echo "${API_RESPONSE}" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
++    if [ -n "${API_TOKEN}" ]; then
++      break
++    fi
++    login_retry=$((login_retry + 1))
++    sleep 2
++  done
++  if [ -z "${API_TOKEN}" ]; then
++    echo "Failed to retrieve API token after ${MAX_LOGIN_RETRIES} attempts"
++    exit 1
++  fi
+ 
+   PAYLOAD='{"name":"'"$HOSTNAME"'","hostname":"'"$HOSTNAME"'","type":"'"poller"'","address":"'"$HOSTNAME"'","parent_address":"'"127.0.0.1"'"}'
+ 
+@@ -63,17 +80,23 @@
+ 
+ EOF
+ 
++  # Allow config archive extraction into symlinked dirs (OpenShift relocations).
++  sed -i '/package: "gorgone::modules::core::action::hooks"/a\      tar_insecure_extra_mode: true' /etc/centreon-gorgone/config.d/39-action.yaml
++
+   systemctl start gorgoned
+ 
+   until [ "$PING_OK" -gt "0" ] 2>/dev/null; do
+     sleep 5
+-    PING_OK=$(curl -s -X GET -H "accept: application/json" "http://${WEB_HOST}:${WEB_GORGONE_PORT}/api/internal/constatus" | grep -o '"ping_ok":[0-9]*' | cut -d':' -f2)
+-    if [ "$PING_OK" -gt "0" ] 2>/dev/null; then
++    API_RESPONSE=$(curl -s -X GET -H "accept: application/json" "http://${WEB_HOST}:${WEB_GORGONE_PORT}/api/internal/constatus")
++    if echo "${API_RESPONSE}" | grep -q '"ping_ok":[1-9]'; then
++      PING_OK=1
+       for action in POLLERGENERATE CFGMOVE POLLERRESTART; do
+         curl -X POST --insecure -H "Content-Type: application/json" -H "centreon-auth-token: ${API_TOKEN}" \
+             -d "{\"action\":\"$action\",\"values\":\"$HOSTNAME\"}" \
+             "http://${WEB_HOST}/centreon/api/index.php?action=action&object=centreon_clapi"
+       done
++    else
++      PING_OK=0
+     fi
+   done
+ fi

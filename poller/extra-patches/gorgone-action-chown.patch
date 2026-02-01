@@ -1,0 +1,32 @@
+--- a/usr/share/perl5/vendor_perl/gorgone/modules/core/action/class.pm
++++ b/usr/share/perl5/vendor_perl/gorgone/modules/core/action/class.pm
+@@ -644,13 +644,21 @@
+                     $self->{logger}->writeLogError("[action] Copy processing - Can't copy file to $dest_filename, $!");
+                     return -1
+                 }
+-                my $uid = getpwnam($options{data}->{content}->{owner});
+-                my $gid = getgrnam($options{data}->{content}->{group});
+-                my $chown_status = chown($uid, $gid, $dest_filename);
+-
+-                # this should be logged but not quiting the sub, as most of the time it will fail, as we can't change ownership as centreon-gorgone user.
+-                if ($chown_status == 0) {
+-                    $self->{logger}->writeLogError("[action] Copy processing - can't change permission of file $dest_filename: $!");
++                if ($> == 0) {
++                    my $uid = getpwnam($options{data}->{content}->{owner});
++                    my $gid = getgrnam($options{data}->{content}->{group});
++                    if (defined($uid) && defined($gid)) {
++                        my $chown_status = chown($uid, $gid, $dest_filename);
++
++                        # this should be logged but not quitting the sub, as most of the time it will fail, as we can't change ownership as centreon-gorgone user.
++                        if ($chown_status == 0) {
++                            $self->{logger}->writeLogError("[action] Copy processing - can't change permission of file $dest_filename: $!");
++                        }
++                    } else {
++                        $self->{logger}->writeLogDebug("[action] Copy processing - skipping chown for $dest_filename (unknown owner/group)");
++                    }
++                } else {
++                    $self->{logger}->writeLogDebug("[action] Copy processing - skipping chown for $dest_filename (non-root)");
+                 }
+                 if ($options{data}->{content}->{mode}) {
+                     chmod(oct($options{data}->{content}->{mode}), $dest_filename) or
+                         $self->{logger}->writeLogError("[action] Copy processing - can't change mode of file $dest_filename: $!");
