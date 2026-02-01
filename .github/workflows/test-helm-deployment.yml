@@ -7,12 +7,14 @@ on:
       - 'web/Dockerfile*'
       - 'poller/Dockerfile*'
       - 'common/**'
+      - 'web/patches/**'
       - '.github/workflows/test-helm-deployment.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
   pull-requests: read
+  packages: write
 
 jobs:
   detect-changes:
@@ -37,10 +39,25 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.web_changed == 'true'
     runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - name: Build web image
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/centreon-web-alma9
+          tags: |
+            type=ref,event=pr,suffix=-test
+      - name: Build and push web image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -50,22 +67,32 @@ jobs:
             REGISTRY_URL=docker.io/slydien
             FROM_IMAGE_VERSION=24.10
             STABILITY=stable
-          tags: centreon-web-alma9:test
-          outputs: type=docker,dest=/tmp/web-image.tar
-      - uses: actions/upload-artifact@v4
-        with:
-          name: web-image
-          path: /tmp/web-image.tar
-          retention-days: 1
+          tags: ${{ steps.meta.outputs.tags }}
+          push: true
 
   build-poller-image:
     needs: detect-changes
     if: needs.detect-changes.outputs.poller_changed == 'true'
     runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - name: Build poller image
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/centreon-poller-alma9
+          tags: |
+            type=ref,event=pr,suffix=-test
+      - name: Build and push poller image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -75,13 +102,8 @@ jobs:
             REGISTRY_URL=ghcr.io/slydien
             FROM_IMAGE_VERSION=24.10
             STABILITY=stable
-          tags: centreon-poller-alma9:test
-          outputs: type=docker,dest=/tmp/poller-image.tar
-      - uses: actions/upload-artifact@v4
-        with:
-          name: poller-image
-          path: /tmp/poller-image.tar
-          retention-days: 1
+          tags: ${{ steps.meta.outputs.tags }}
+          push: true
 
   test-deployment:
     needs: [detect-changes, build-web-image, build-poller-image]
@@ -109,10 +131,23 @@ jobs:
 
       - name: Set image references
         run: |
-          # Use public registry images for testing
-          # The build jobs already validated the Dockerfiles work
-          echo "WEB_IMAGE=ghcr.io/slydien/centreon-web-alma9:24.10-openshift" >> $GITHUB_ENV
-          echo "POLLER_IMAGE=ghcr.io/slydien/centreon-poller-alma9:24.10-openshift" >> $GITHUB_ENV
+          # Use PR-built images if available, otherwise fall back to public images
+          if [ "${{ needs.build-web-image.outputs.image }}" != "" ]; then
+            WEB_IMAGE="${{ needs.build-web-image.outputs.image }}"
+          else
+            WEB_IMAGE="ghcr.io/slydien/centreon-web-alma9:24.10-openshift"
+          fi
+
+          if [ "${{ needs.build-poller-image.outputs.image }}" != "" ]; then
+            POLLER_IMAGE="${{ needs.build-poller-image.outputs.image }}"
+          else
+            POLLER_IMAGE="ghcr.io/slydien/centreon-poller-alma9:24.10-openshift"
+          fi
+
+          echo "WEB_IMAGE=$WEB_IMAGE" >> $GITHUB_ENV
+          echo "POLLER_IMAGE=$POLLER_IMAGE" >> $GITHUB_ENV
+          echo "Using web image: $WEB_IMAGE"
+          echo "Using poller image: $POLLER_IMAGE"
 
       - name: Setup Helm
         uses: azure/setup-helm@v4
