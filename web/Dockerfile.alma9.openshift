@@ -140,7 +140,7 @@ rm -f /tmp/web-patches/broker.json.patch
 
 # Apply web entrypoint patches (strip .github/docker/centreon-web/alma9/entrypoint/ prefix)
 for p in /tmp/web-patches/*.patch; do
-  patch -N -p6 -d /usr/share/centreon -i "$p" || true
+  patch -N -p5 -d /usr/share/centreon -i "$p" || true
 done
 rm -rf /tmp/web-patches
 
