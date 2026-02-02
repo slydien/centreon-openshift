@@ -206,6 +206,8 @@ services:
     initWait:
       # -- Wait for web + db before starting poller
       enabled: true
+      # -- Init container image used to wait for dependencies
+      image: "alpine:3.19"
       # -- Web health URL to wait on
       webUrl: ""
       # -- DB host to wait on

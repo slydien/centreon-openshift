@@ -35,7 +35,7 @@ spec:
       {{- $dbPort := $svc.initWait.dbPort | default 3306 }}
       initContainers:
         - name: wait-deps
-          image: alpine:3.19
+          image: {{ $svc.initWait.image | default "alpine:3.19" | quote }}
           imagePullPolicy: {{ $svc.imagePullPolicy | default $.Values.global.imagePullPolicy }}
           command:
             - /bin/sh

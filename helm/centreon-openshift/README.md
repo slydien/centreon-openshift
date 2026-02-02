@@ -109,6 +109,7 @@ The following table lists the configurable parameters of the chart and their def
 | services.poller.env.WEB_API_USERNAME | string | `admin` | API username for poller registration |
 | services.poller.env.WEB_API_PASSWORD | string | `"Centreon!2021"` | API password for poller registration |
 | services.poller.initWait.enabled | bool | `true` | Wait for web + db before starting poller |
+| services.poller.initWait.image | string | `"alpine:3.19"` | Init container image used to wait for dependencies |
 | services.poller.initWait.webUrl | string | `""` | Web health URL to wait on |
 | services.poller.initWait.dbHost | string | `"db"` | DB host to wait on |
 | services.poller.initWait.dbPort | int | `3306` | DB port to wait on |
