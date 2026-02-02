@@ -34,6 +34,8 @@ routes:
     enabled: true
     # -- Route host (leave empty to let OpenShift assign)
     host: ""
+    # -- Route path (leave empty for root)
+    path: "/centreon/"
     tls:
       # -- TLS termination type (edge, passthrough, reencrypt)
       termination: edge
@@ -80,8 +82,8 @@ services:
       MARIADB_PASSWORD: centreon
       # -- Extra MariaDB flags
       MARIADB_EXTRA_FLAGS: "--secure-file-priv="
-      # -- MySQL host name
-      MYSQL_HOST: db
+      # -- MySQL host name (defaults to <release>-db when empty)
+      MYSQL_HOST: ""
       # -- LDAP host name
       LDAP_HOST: ""
       # -- OpenID host name
@@ -210,8 +212,8 @@ services:
       image: "alpine:3.19"
       # -- Web health URL to wait on
       webUrl: ""
-      # -- DB host to wait on
-      dbHost: "db"
+      # -- DB host to wait on (defaults to <release>-db when empty)
+      dbHost: ""
       # -- DB port to wait on
       dbPort: 3306
       # -- Max wait time in seconds

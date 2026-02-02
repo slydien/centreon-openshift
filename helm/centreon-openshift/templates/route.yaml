@@ -3,19 +3,22 @@
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: web
+  name: {{ printf "%s-%s" .Release.Name "web" }}
   labels:
     {{- include "centreon.labels" . | nindent 4 }}
     app.kubernetes.io/component: web
 spec:
   to:
     kind: Service
-    name: web
+    name: {{ printf "%s-%s" .Release.Name "web" }}
     weight: 100
   port:
     targetPort: http
   {{- if $route.host }}
   host: {{ $route.host }}
+  {{- end }}
+  {{- if $route.path }}
+  path: {{ $route.path }}
   {{- end }}
   {{- if $route.tls }}
   tls:

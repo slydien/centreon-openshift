@@ -12,7 +12,6 @@ COPY --chmod=755 ./common/fix-permissions /usr/local/bin/fix-permissions
 COPY --chmod=440 ./common/openshift/sudoers /etc/sudoers.d/centreon-openshift
 COPY --chmod=755 ./common/openshift/sudo-wrapper /usr/local/bin/sudo
 
-COPY --chmod=660 ./web/patches/00-init.sh.patch /tmp/00-init.sh.patch
 COPY --chmod=660 ./common/openshift/patches/systemctl.patch /tmp/systemctl.patch
 COPY --chmod=660 ./common/openshift/patches/ignore-vmware-chgrp.patch /tmp/ignore-vmware-chgrp.patch
 COPY --chmod=755 ./common/openshift/fix-poller-gen.py /usr/local/bin/fix-poller-gen.py
@@ -140,9 +139,6 @@ rm -f /tmp/ignore-vmware-chgrp.patch
 # Disable ownership changes in CLAPI poller generation for OpenShift
 /usr/local/bin/fix-poller-gen.py
 
-# Apply common entrypoint patches
-patch -N -p6 -d /usr/share/centreon -i /tmp/00-init.sh.patch || true
-rm -f /tmp/00-init.sh.patch
 patch -N -p5 -d /bin -i /tmp/systemctl.patch || true
 rm -f /tmp/systemctl.patch
 

@@ -31,6 +31,7 @@ The following table lists the configurable parameters of the chart and their def
 | rbac.endpointSlice.serviceAccountName | string | `default` | Service account name used for EndpointSlice RBAC |
 | routes.web.enabled | bool | `true` | Create an OpenShift Route for the web service |
 | routes.web.host | string | `""` | Route host (leave empty to let OpenShift assign) |
+| routes.web.path | string | `"/centreon/"` | Route path (leave empty for root) |
 | routes.web.tls.termination | string | `edge` | TLS termination type (edge, passthrough, reencrypt) |
 | routes.web.tls.insecureEdgeTerminationPolicy | string | `Redirect` | Insecure edge termination policy (None, Allow, Redirect) |
 | services.web.enabled | bool | `true` | Deploy the web service |
@@ -51,7 +52,7 @@ The following table lists the configurable parameters of the chart and their def
 | services.web.env.MARIADB_USER | string | `centreon` | MariaDB user |
 | services.web.env.MARIADB_PASSWORD | string | `centreon` | MariaDB password |
 | services.web.env.MARIADB_EXTRA_FLAGS | string | `"--secure-file-priv="` | Extra MariaDB flags |
-| services.web.env.MYSQL_HOST | string | `db` | MySQL host name |
+| services.web.env.MYSQL_HOST | string | `""` | MySQL host name (defaults to `<release>-db`) |
 | services.web.env.LDAP_HOST | string | `""` | LDAP host name |
 | services.web.env.OPENID_HOST | string | `""` | OpenID host name |
 | services.web.env.SAML_HOST | string | `""` | SAML host name |
@@ -111,7 +112,7 @@ The following table lists the configurable parameters of the chart and their def
 | services.poller.initWait.enabled | bool | `true` | Wait for web + db before starting poller |
 | services.poller.initWait.image | string | `"alpine:3.19"` | Init container image used to wait for dependencies |
 | services.poller.initWait.webUrl | string | `""` | Web health URL to wait on |
-| services.poller.initWait.dbHost | string | `"db"` | DB host to wait on |
+| services.poller.initWait.dbHost | string | `""` | DB host to wait on (defaults to `<release>-db`) |
 | services.poller.initWait.dbPort | int | `3306` | DB port to wait on |
 | services.poller.initWait.timeoutSeconds | int | `300` | Max wait time in seconds |
 | services.poller.resources.requests.cpu | string | `10m` |  |

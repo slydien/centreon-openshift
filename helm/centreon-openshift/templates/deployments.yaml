@@ -3,7 +3,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $name }}
+  name: {{ printf "%s-%s" $.Release.Name $name }}
   labels:
     {{- include "centreon.labels" $ | nindent 4 }}
     app.kubernetes.io/component: {{ $name }}
@@ -29,9 +29,9 @@ spec:
         {{- toYaml $.Values.global.imagePullSecrets | nindent 8 }}
       {{- end }}
       {{- if and (eq $name "poller") $svc.initWait $svc.initWait.enabled }}
-      {{- $defaultWebUrl := printf "http://web.%s.svc.cluster.local/centreon/api/latest/platform/versions" $.Release.Namespace }}
+      {{- $defaultWebUrl := printf "http://%s-web.%s.svc.cluster.local/centreon/api/latest/platform/versions" $.Release.Name $.Release.Namespace }}
       {{- $webUrl := $svc.initWait.webUrl | default $defaultWebUrl }}
-      {{- $dbHost := $svc.initWait.dbHost | default "db" }}
+      {{- $dbHost := $svc.initWait.dbHost | default (printf "%s-db" $.Release.Name) }}
       {{- $dbPort := $svc.initWait.dbPort | default 3306 }}
       initContainers:
         - name: wait-deps
@@ -106,7 +106,9 @@ spec:
             {{- range $key, $val := $svc.env }}
             - name: {{ $key }}
               {{- if and (eq $key "WEB_HOST") (eq $val "") }}
-              value: "web.{{ $.Release.Namespace }}.svc.cluster.local"
+              value: "{{ $.Release.Name }}-web.{{ $.Release.Namespace }}.svc.cluster.local"
+              {{- else if and (eq $key "MYSQL_HOST") (eq $val "") }}
+              value: "{{ $.Release.Name }}-db.{{ $.Release.Namespace }}.svc.cluster.local"
               {{- else }}
               value: {{ $val | quote }}
               {{- end }}
