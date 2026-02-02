@@ -11,41 +11,48 @@ It provides overlays for both web and poller images, plus a Helm chart for OpenS
 ## Layout
 ```
 .
-├─ common/
-│  ├─ fix-permissions
-│  └─ openshift/
-│     ├─ sudoers
-│     ├─ sudo-wrapper
-│     ├─ patches/
-│        ├─ apache-listen-8080.patch
+├─ common/                          # Shared overlay assets used by web/poller images.
+│  ├─ fix-permissions               # Helper to normalize file ownership/permissions.
+│  └─ openshift/                    # OpenShift-specific helpers and patches.
+│     ├─ sudoers                    # Sudo policy used inside OpenShift images.
+│     ├─ sudo-wrapper               # Wrapper script for controlled sudo usage.
+│     ├─ fix-poller-gen.py          # Adjustments for poller generation on OpenShift.
+│     └─ patches/                   # Common patch set applied to base images.
+│        ├─ 00-init.sh.patch        # Init script tweaks for OpenShift runtime.
 │        ├─ ignore-vmware-chgrp.patch
-│        └─ poller-generate-disable-ownership.patch
-│     └─ fix-poller-gen.py
-├─ helm/
-│  └─ centreon-openshift/
-│     ├─ Chart.yaml
-│     ├─ README.md
-│     ├─ templates/
-│     └─ values.yaml
-├─ web/
-│  ├─ Dockerfile.alma9.openshift
-│  ├─ patches/
-│  └─ config/
-│     ├─ httpd/
-│     │  ├─ 10-centreon.conf
-│     │  └─ zzz-openshift-runtime.conf
-│     ├─ php-fpm/
-│     │  └─ centreon.conf
-│     ├─ apache2/
-│     │  ├─ centreon.conf
-│     │  ├─ ports.conf
-│     │  └─ zzz-openshift-runtime.conf
-│     └─ php-fpm-debian/
-│        └─ centreon.conf
-└─ poller/
-   ├─ Dockerfile.alma9.openshift
-   ├─ patches/
-   └─ extra-patches/
+│        ├─ poller-generate-disable-ownership.patch
+│        └─ systemctl.patch
+├─ docs/                            # Design notes, plans, and TODOs.
+│  ├─ PLAN-helm-chart-ci-testing.md # CI testing plan for the Helm chart.
+│  └─ TODO-openshift-uid-compatibility.md
+├─ helm/                            # Helm charts for OpenShift deployment.
+│  └─ centreon-openshift/           # Main Helm chart and templates.
+│     ├─ Chart.yaml                 # Chart metadata.
+│     ├─ README.md                  # Chart usage and values documentation.
+│     ├─ templates/                 # Kubernetes/OpenShift manifests.
+│     └─ values.yaml                # Default chart configuration.
+├─ web/                             # Web image overlay (Dockerfile + patches + configs).
+│  ├─ Dockerfile.alma9.openshift    # OpenShift overlay Dockerfile for web image.
+│  ├─ patches/                      # Web container patch set.
+│  │  ├─ 15-installation.sh.patch
+│  │  ├─ 20-configuration_files.sh.patch
+│  │  ├─ 70-gorgone.sh.patch
+│  │  ├─ 71-vault.sh.patch
+│  │  ├─ 72-authentication.sh.patch
+│  │  ├─ 99-logs.sh.patch
+│  │  ├─ apache-listen-8080.patch
+│  │  └─ broker.json.patch
+│  └─ config/                       # Service configs injected into the image.
+│     ├─ httpd/                     # httpd config for RHEL/Alma variants.
+│     ├─ php-fpm/                   # php-fpm config for RHEL/Alma variants.
+│     ├─ apache2/                   # Apache config for Debian/Ubuntu variants.
+│     └─ php-fpm-debian/            # php-fpm config for Debian/Ubuntu variants.
+└─ poller/                          # Poller image overlay (Dockerfile + patches).
+   ├─ Dockerfile.alma9.openshift    # OpenShift overlay Dockerfile for poller image.
+   ├─ patches/                      # Poller container patch set.
+   │  └─ 60-register_central.sh.patch
+   └─ extra-patches/                # Additional patches applied to poller internals.
+      └─ gorgone-action-chown.patch
 ```
 
 ## Build examples
