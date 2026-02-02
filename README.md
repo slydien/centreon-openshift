@@ -18,7 +18,6 @@ It provides overlays for both web and poller images, plus a Helm chart for OpenS
 │     ├─ sudo-wrapper               # Wrapper script for controlled sudo usage.
 │     ├─ fix-poller-gen.py          # Adjustments for poller generation on OpenShift.
 │     └─ patches/                   # Common patch set applied to base images.
-│        ├─ 00-init.sh.patch        # Init script tweaks for OpenShift runtime.
 │        ├─ ignore-vmware-chgrp.patch
 │        ├─ poller-generate-disable-ownership.patch
 │        └─ systemctl.patch
@@ -34,6 +33,7 @@ It provides overlays for both web and poller images, plus a Helm chart for OpenS
 ├─ web/                             # Web image overlay (Dockerfile + patches + configs).
 │  ├─ Dockerfile.alma9.openshift    # OpenShift overlay Dockerfile for web image.
 │  ├─ patches/                      # Web container patch set.
+│  │  ├─ 00-init.sh.patch
 │  │  ├─ 15-installation.sh.patch
 │  │  ├─ 20-configuration_files.sh.patch
 │  │  ├─ 70-gorgone.sh.patch
@@ -50,6 +50,7 @@ It provides overlays for both web and poller images, plus a Helm chart for OpenS
 └─ poller/                          # Poller image overlay (Dockerfile + patches).
    ├─ Dockerfile.alma9.openshift    # OpenShift overlay Dockerfile for poller image.
    ├─ patches/                      # Poller container patch set.
+   │  ├─ 00-init.sh.patch
    │  └─ 60-register_central.sh.patch
    └─ extra-patches/                # Additional patches applied to poller internals.
       └─ gorgone-action-chown.patch

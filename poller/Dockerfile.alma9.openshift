@@ -12,7 +12,6 @@ COPY --chmod=755 ./common/fix-permissions /usr/local/bin/fix-permissions
 COPY --chmod=440 ./common/openshift/sudoers /etc/sudoers.d/centreon-openshift
 COPY --chmod=755 ./common/openshift/sudo-wrapper /usr/local/bin/sudo
 
-COPY --chmod=660 ./common/openshift/patches/00-init.sh.patch /tmp/00-init.sh.patch
 COPY --chmod=660 ./common/openshift/patches/systemctl.patch /tmp/systemctl.patch
 COPY --chmod=660 ./poller/patches/ /tmp/poller-patches/
 COPY --chmod=660 ./poller/extra-patches/gorgone-action-chown.patch /tmp/gorgone-action-chown.patch
@@ -108,10 +107,6 @@ done
 sed -i "s/^root:[^:]*:0:.*/root:x:0:${root_members}/" /etc/group
 
 dnf install -y patch
-
-# Apply patches with --forward to skip already-applied patches
-patch -N -p6 -d /usr/share/centreon -i /tmp/00-init.sh.patch || true
-rm -f /tmp/00-init.sh.patch
 
 # Apply poller-specific patches (strip .github/docker/centreon-poller/alma9/entrypoint/ prefix)
 for p in /tmp/poller-patches/*.patch; do
